@@ -1,0 +1,95 @@
+#zero page usage
+
+0000--0007 interrupt handler
+0010--0017 indexed memory locations
+0020--0037 function parameters
+0040--0057 runtime function pointers
+0060--0077 parameter lvalues
+0100--0177 activation record
+
+#calling convention
+
+Arguments are stored from left to right at 0020.
+The return value is found in AC.
+The return address is stored in the first word of
+the procedure as JMS does.
+
+#frame management
+
+EAR (JMS I 0040)  establish activation record
+(argc << 6 | framesize)
+(lvalues: framesize words)
+(argv: argc words)
+
+copy argc words from 0020 to argv
+write argc pointers to argv to 0060
+copy framesize words from lvalues to 0100
+
+
+RLV (JMS I 0041)  restore lvalues
+(frame)
+
+frame points to just after an ENTER
+same action as ENTER but with an indirect frame
+except we don't copy the arguments
+
+IAV (JMS I 0042)  initialize automatic variables
+(pointer)
+(len)
+(data: len words)
+
+copy len words from data to pointer
+
+
+JSR (JMS I 0043)  jump subroutine, save, and restore
+(len << 6 | offset)
+(buf)
+(fun)
+
+copy len words from 0100 + offset to buf
+then JMS I fun
+then copy len words from buf to 0100 + offset
+
+
+#arithmetic
+
+SHL (JMS I 0050)
+(addr1)
+
+AC = *addr1 << AC
+
+
+SHR (JMS I 0051)
+(addr1)
+
+AC = *addr1 >> AC
+
+
+MUL (JMS I 0052)
+(addr1)
+
+AC = *addr1 * AC
+
+
+DIV (JMS I 0053)
+(addr1)
+
+AC = *addr1 / AC
+
+
+MOD (JMS I 0054)
+(addr1)
+
+AC = *addr1 % AC
+
+
+IOR (JMS I 0055)
+(addr1)
+
+AC = *addr1 | AC
+
+
+XOR (JMS I 0056)
+(addr1)
+
+AC = *addr1 ^ AC

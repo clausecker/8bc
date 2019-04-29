@@ -1,0 +1,22 @@
+// from kbman
+// only those stdlib functions that make sense on the PDP-8
+exit(status);
+	AC = status; HLT
+
+char = getchar();
+	read char from keyboard, EOT (0004) ends input
+	high bit is stripped off already
+
+printf(format, ...);
+	print arguments formatted.
+	%d  decimal
+	%o  octal
+	%c  character
+	%s  string
+	%%  %
+
+printn(number, base);
+	print number n to base b
+
+putchar(char);
+	write char to teleprinter
