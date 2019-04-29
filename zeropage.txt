@@ -26,6 +26,7 @@ copy framesize words from lvalues to 0100
 copy argc words from 0020 to argv
 write argc pointers to argv to 0060
 clear AC
+continue after argv
 
 RCF (JMS I 0041)  restore call frame
 (frame)
@@ -34,6 +35,7 @@ frame points to just after an EAR
 same action as EAR but with an indirect activation record
 except we don't copy arguments from 0020
 clear AC
+continue after frame
 
 IAV (JMS I 0042)  initialize automatic variables
 (pointer)
@@ -42,6 +44,7 @@ IAV (JMS I 0042)  initialize automatic variables
 
 copy len words from data to pointer
 clear AC
+continue after data
 
 JSR (JMS I 0043)  jump subroutine, save, and restore
 (len << 6 | offset)
@@ -52,46 +55,54 @@ copy len words from 0100 + offset to buf
 then JMS I fun
 then copy len words from buf to 0100 + offset
 clear AC
+continue after fun
 
 #arithmetic
 
-SHL (JMS I 0050)
-(addr1)
+SHL (JMS I 0050)  shift left
+(addr)
 
-AC = *addr1 << AC
+AC = *addr << AC
+continue after addr
 
 
-SHR (JMS I 0051)
-(addr1)
+SHR (JMS I 0051)  shift right
+(addr)
 
 AC = *addr1 >> AC
+continue after addr
 
 
-MUL (JMS I 0052)
-(addr1)
+MUL (JMS I 0052)  multiply (unsigned)
+(addr)
 
-AC = *addr1 * AC
-
-
-DIV (JMS I 0053)
-(addr1)
-
-AC = *addr1 / AC
+AC = *addr * AC
+continue after addr
 
 
-MOD (JMS I 0054)
-(addr1)
+DIV (JMS I 0053)  divide (unsigned)
+(addr)
 
-AC = *addr1 % AC
-
-
-IOR (JMS I 0055)
-(addr1)
-
-AC = *addr1 | AC
+AC = *addr / AC
+continue after addr
 
 
-XOR (JMS I 0056)
-(addr1)
+MOD (JMS I 0054)  modulo (unsigned)
+(addr)
 
-AC = *addr1 ^ AC
+AC = *addr % AC
+continue after addr
+
+
+IOR (JMS I 0055)  inclusive or
+(addr)
+
+AC = *addr | AC
+continue after addr
+
+
+XOR (JMS I 0056)  exclusive or
+(addr)
+
+AC = *addr ^ AC
+continue after addr
