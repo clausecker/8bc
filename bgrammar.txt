@@ -1,0 +1,95 @@
+// from kbman.pdf
+
+program	= definition*
+definition
+	= name ("[" constant? "]")? (ival ("," ival)*)? ";"
+	| name "(" (name ("," name)*)? ")" statement
+ival	= constant
+	| name
+statement
+	= "auto" name constant? ("," name constant?)* ";" statement
+	| "extrn" name ("," name)* ";" statement
+	| name ":" statement
+	| "case" constant ":" statement
+	| "{" statement* "}"
+	| "if" "(" rvalue ")" statement ("else" statement)?
+	| "while" "(" rvalue ")" statement
+	| "switch" rvalue statement
+	| "goto" rvalue ";"
+	| "return" ("(" rvalue ")")? ";"
+	| rvalue? ";"
+rvalue	= "(" rvalue ")"
+	| lvalue
+	| constant
+	| lvalue assign rvalue
+	| inc-dec lvalue
+	| lvalue inc-dec
+	| unary rvalue
+	| "&" rvalue
+	| rvalue binary rvalue
+	| rvalue "?" rvalue ":" rvalue
+	| rvalue "(" (rvalue ("," rvalue)*)? ")"
+assign	= "=" binary?
+inc-dec	= "++"
+	| "--"
+unary	= "-"
+	| "!"
+binary	= "|"
+	| "&"
+	| "=="
+	| "!="
+	| "<"
+	| "<="
+	| ">"
+	| ">="
+	| "<<"
+	| ">>"
+	| "+"
+	| "-"
+	| "%"
+	| "*"
+	| "/"
+lvalue	= name
+	| "*" rvalue
+	| rvalue "[" rvalue "]"
+constant= digit+
+	| "'" char char? "'"
+	| '"' char* '"'
+name	= alpha alpha-digit{0-7}
+alpha-digit
+	= alpha
+	| digit
+
+Comments are delimited as in PL/I by /* and */.
+
+In general, B requires tokens to be separated by blanks, comments
+or newlines, however the compiler infers separators surrounding
+any of the characters (){}[],;?: or surrounding any maximal se-
+quence of the characters +-*/<>&|!.
+
+The character set used in B is ASCII.
+
+The syntactic variable 'alpha' is not defined.  It represents the
+characters A to Z, a to z, _, and backspace.
+
+The syntactic variable 'digiti' is not defined.  It represents the
+characters 0, 1, 2, ... 9.
+
+The syntactic variable 'char' is not defined.  It is essentially
+any character in the set plus the escape character '*' followed
+by another character to represent characters not easily
+represented in the set.  The following escape sequences are
+currently defined:
+
+	*0  null
+	*e  end-of-file
+	*(  {
+	*)  }
+	*t  tab
+	**  *
+	*'  '
+	*"  "
+	*n  new line
+
+All keywords in the language are only recognized in lower case.
+Keywords are reserved.
