@@ -1,0 +1,58 @@
+	/ B code:
+	foo(a, b, c)
+	{
+		auto d = 42, e;
+		extrn f;
+
+		e = bar(a, b);
+
+		return (c + d * e - f);
+	}
+
+	/ compiles to:
+foo.d,	0		/ space for foo.d
+foo.e,	0		/ space for foo.e
+
+_foo,	ECF
+	0303		/ 3 arguments, 3 lvalues
+	foo.d		/ lvalues for variables
+	foo.e
+	f
+argv,	*.+3		/ space for arguments
+			/ zero page usage:
+			/ 0060 points to argv+0 (a)
+			/ 0061 points to argv+1 (b)
+			/ 0062 points to argv+2 (c)
+			/ 0100 points to foo.d
+			/ 0101 points to foo.e
+			/ 0102 points to f
+			/ 0103 points to bar
+	IAV
+	foo.d		/ initialize foo.d
+	1		/ 1 word of initialization
+	0052		/ initialization for foo.d
+
+	TAD I 0060	/ load rvalue of a
+	DCA 0020	/ set up first argument
+	TAD I 0061	/ load rvalue of b
+	DCA 0021	/ set up second argument
+	JMS _bar	/ call bar
+	RCF
+	_foo+1		/ reestablish call frame
+
+	TAD 0077	/ load return value
+	DCA I 0101	/ save return value to e
+
+	TAD I 0062	/ load c
+	DCA 0104	/ stash it away
+	TAD I 0100	/ load d
+	DCA 0105	/ stash it away
+	TAD I 0101	/ load e
+	MUL		/ multiple AC with...
+	0105		/ d
+	DCA 0104	/ stash it away
+	TAD I 0102	/ f
+	CIA		/ -f
+	TAD 0104	/ subtract f from 0104
+	DCA 0077	/ store return value
+	JMP I _foo	/ return

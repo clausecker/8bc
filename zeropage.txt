@@ -4,7 +4,8 @@
 0010--0017 indexed memory locations
 0020--0037 function parameters
 0040--0057 runtime function pointers
-0060--0077 parameter lvalues
+0060--0077 argument lvalues
+      0077 return value as rvalue
 0100--0177 activation record
 
 #calling convention
@@ -16,22 +17,23 @@ the procedure as JMS does.
 
 #frame management
 
-EAR (JMS I 0040)  establish activation record
+ECF (JMS I 0040)  establish call frame
 (argc << 6 | framesize)
 (lvalues: framesize words)
 (argv: argc words)
 
+copy framesize words from lvalues to 0100
 copy argc words from 0020 to argv
 write argc pointers to argv to 0060
-copy framesize words from lvalues to 0100
+clear AC
 
-
-RLV (JMS I 0041)  restore lvalues
+RCF (JMS I 0041)  restore call frame
 (frame)
 
-frame points to just after an ENTER
-same action as ENTER but with an indirect frame
-except we don't copy the arguments
+frame points to just after an EAR
+same action as EAR but with an indirect activation record
+except we don't copy arguments from 0020
+clear AC
 
 IAV (JMS I 0042)  initialize automatic variables
 (pointer)
@@ -39,7 +41,7 @@ IAV (JMS I 0042)  initialize automatic variables
 (data: len words)
 
 copy len words from data to pointer
-
+clear AC
 
 JSR (JMS I 0043)  jump subroutine, save, and restore
 (len << 6 | offset)
@@ -49,7 +51,7 @@ JSR (JMS I 0043)  jump subroutine, save, and restore
 copy len words from 0100 + offset to buf
 then JMS I fun
 then copy len words from buf to 0100 + offset
-
+clear AC
 
 #arithmetic
 
