@@ -1,22 +1,31 @@
-_exit,	0
+	PAGE
+Xexit,	0
 	CLA
-	TAD 0077
+	TAD 0020
 	HLT
 
-_getchar,
+Xgetchar,
 	0
 	KSF
 	 JMP .-1
 	KRB
-	AND [0177
-	DCA 0077
-	JMP I _getchar
+	AND (0177)
+	DCA 0056
+	JMP I Xgetchar
 
-_putchar,
+Xputchar,
 	0
 	CLA
 	TAD 0020
 	TLS
 	TSF
 	 JMP .-1
-	JMP I _putchar
+	JMP I Xputchar
+
+Xsense,
+	0
+	CLA OSR
+	DCA 0056
+	JMP I Xsense
+
+	$

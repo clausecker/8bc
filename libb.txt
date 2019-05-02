@@ -20,3 +20,9 @@ printn(number, base);
 
 putchar(char);
 	write char to teleprinter
+
+main();
+	main function
+
+switches = sense();
+	return content of switch register	

@@ -59,7 +59,7 @@ then JMS I fun
 then copy len words from buf to 0100 + offset
 continue after fun
 
-RET (JMS I 0057)  return from subroutine
+RET (JMP I 0057)  return from subroutine
 
 returns to caller, assuming call frame was previously
 established with ECF or RCF
@@ -108,7 +108,7 @@ AC = *addr | AC
 continue after addr
 
 
-XOR (JMS I 0046)  exclusive or
+EOR (JMS I 0046)  exclusive or
 (addr)
 
 AC = *addr ^ AC
