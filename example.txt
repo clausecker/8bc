@@ -10,10 +10,10 @@
 	}
 
 	/ compiles to:
-foo.d,	0		/ space for foo.d
 foo.e,	0		/ space for foo.e
 
-_foo,	ECF
+_foo,	0
+	ECF
 	0303		/ 3 arguments, 3 lvalues
 	foo.d		/ lvalues for variables
 	foo.e
@@ -28,9 +28,9 @@ argv,	*.+3		/ space for arguments
 			/ 0102 points to f
 			/ 0103 points to bar
 	IAV
-	foo.d		/ initialize foo.d
 	1		/ 1 word of initialization
 	0052		/ initialization for foo.d
+foo.d,	0		/ space for foo.d
 
 	TAD I 0060	/ load rvalue of a
 	DCA 0020	/ set up first argument

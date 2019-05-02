@@ -1,0 +1,22 @@
+_exit,	0
+	CLA
+	TAD 0077
+	HLT
+
+_getchar,
+	0
+	KSF
+	 JMP .-1
+	KRB
+	AND [0177
+	DCA 0077
+	JMP I _getchar
+
+_putchar,
+	0
+	CLA
+	TAD 0020
+	TLS
+	TSF
+	 JMP .-1
+	JMP I _putchar
