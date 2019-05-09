@@ -1,0 +1,51 @@
+draft for an enhanced ECF facility:
+
+/ leaf function
+ECF
+4000 | argc << 6 | initc
+frame[initc]
+
+ * copy return address to return area
+ * copy frame to local registers
+ * write pointers to param area to arg area
+ * continue after frame[initc]
+
+/ inner function
+ECF
+argc << 6 | initc
+varc << 6 | savec
+stash[savec]
+argv[argc]
+vars[varc]
+frame[initc]
+
+ * copy return address to return area
+ * skip savec registers in scratch
+ * copy frame to scratch
+ * write pointers to vars to scratch
+ * copy param area to argv
+ * write pointers to argv to arg area
+ * write ecf-area pointer to return value
+
+/ only valid in inner functions
+RCF
+ecf-area pointer
+
+ * copy return address to return area
+ * load savec registers from scratch
+ * copy frame to scratch
+ * write pointers to vars to scratch
+ * copy pointers to argv to arg area
+ * write ecf-area pointer to return value
+
+/ save registers (only valid in inner functions)
+SVR
+
+ * load ecf-area pointer from return address
+ * copy savec registers to stash
+
+IAV
+len << 6 | start
+values[len]
+
+ * copy len values to locations pointed to by each of 0100 | start
