@@ -1,0 +1,235 @@
+// the grammar we use for 8bc
+
+
+8bc uses 6-bit ASCII for its character set:
+
+	  0 1 2 3 4 5 6 7    0 1 2 3 4 5 6 7
+	0   ! " # $ % & '
+	1 ( ) * + , - . /
+	2 0 1 2 3 4 5 6 7
+	3 8 9 : ; < = > ?
+	4 @ A B C D E F G    ` a b c d e f g
+	5 H I J K L M N O    h i j k l m n o
+	6 P Q R S T U V W    p q r s t u v w
+	7 X Y Z [ \ ] ^ _    x y z { | } ~
+
+Character 00 is the space character.  The characters on the right hand
+site are alternative spellings for @ (40) to ^ (76).  If they appear in
+an ASCII source file, they are treated the same way as the chracters on
+the left.  There is no alternative spelling for _ (character 77).
+
+These are the tokens of B:
+
+punctuation:
+	! % & ( ) * + , - / : ; < = > ? [ \ ] ^
+	++ -- == != <= >= << >>
+	=% =& =* =+ =- =/ =< => =\ =^ === =!= =<= =>= =<< =>>
+
+constant:
+	[0-9]+
+	'([^*']|\*[0et*'"n])'
+	"([^*"]|\*[0et*'"n])*"
+
+name:
+	[A-Z_][A-Z_0-9]*
+
+keyword:
+	AUTO EXTRN CASE IF ELSE WHILE SWITCH GOTO RETURN
+
+Keywords are reserved and may not be used as identifiers.
+
+This is the grammar of B, given in YACC syntax:
+
+%token	CONSTANT
+%token	NAME
+%token	AUTO		/* the AUTO keyword */
+%token	EXTRN		/* the EXTRN keyword */
+%token	CASE		/* the CASE keyword */
+%token	IF		/* the IF keyword */
+%token	ELSE		/* the ELSE keyword */
+%token	WHILE		/* the WHILE keyword */
+%token	SWITCH		/* the SWITCH keyword */
+%token	GOTO		/* the GOTO keyword */
+%token	RETURN		/* the RETURN keyword */
+
+%token	ASOR		/* the =\ mark */
+%token	ASAND		/* the =& mark */
+%token	ASEQ		/* the === mark */
+%token	ASNE		/* the =!= mark */
+%token	ASLT		/* the =< mark */
+%token	ASLE		/* the =<= mark */
+%token	ASGT		/* the => mark */
+%token	ASGE		/* the =>= mark */
+%token	ASSHL		/* the =<< mark */
+%token	ASSHR		/* the =>> mark */
+%token	ASADD		/* the =+ mark */
+%token	ASSUB		/* the =- mark */
+%token	ASMOD		/* the =% mark */
+%token	ASMUL		/* the =* mark */
+%token	ASDIV		/* the =/ mark */
+
+%token	INC		/* the ++ mark */
+%token	DEC		/* the -- mark */
+
+%token	EQ		/* the == mark */
+%token	NE		/* the != mark */
+%token	LE		/* the <= mark */
+%token	GE		/* the >= mark */
+%token	SHL		/* the << mark */
+%token	SHR		/* the >> mark */
+
+%start	program
+
+%%
+
+program	: /* empty */
+	| program definition
+	;
+
+definition
+	: NAME initializer ';'				/* simple definition */
+	| NAME '[' vector-length ']' initializer ';'	/* vector definition */
+	| NAME '( parameters ')' statement		/* function definition */
+	;
+
+initializer
+	: /* empty */
+	| ival ival-list
+	;
+
+ival-list
+	: /* empty */
+	| ival-list ',' ival
+	;
+
+ival	: CONSTANT
+	| NAME
+	;
+
+vector-length
+	: /* empty */
+	| CONSTANT
+	;
+
+parameters
+	: /* empty */
+	| name-list
+	;
+
+name-list
+	: NAME
+	| name-list ',' NAME
+	;
+
+statement
+	: AUTO name-const-list ';' statement
+	| EXTRN name-list ';' statement
+	| NAME ':' statement
+	| CASE CONSTANT ':' statement
+	| '[' statement-list ']'
+	| IF '(' rvalue ')' statement else-clause
+	| WHILE '(' rvalue ')' statement
+	| SWITCH '(' rvalue ')' statement		/* not original */
+	| GOTO rvalue ';'
+	| RETURN return-value ';'
+	| rvalue ';'
+	| ';'
+
+name-const-list
+	: NAME constant-opt
+	| name-const-list ',' NAME constant-opt
+	;
+
+constant-opt
+	: /* empty */
+	| CONSTANT
+	;
+
+else-clause
+	: /* empty */
+	| ELSE statement
+	;
+
+rvalue	: '(' rvalue ')'
+	| lvalue
+	| CONSTANT
+	| lvalue assign rvalue
+	| inc-dec lvalue
+	| lvalue inc-dec
+	| unary rvalue
+	| '&' lvalue
+	| rvalue binary rvalue
+	| rvalue '?' rvalue ':' rvalue
+	| rvalue '(' arguments ')'
+
+arguments
+	: /* empty */
+	| argument-list
+	;
+
+argument-list
+	: rvalue
+	| argument-list ',' rvalue
+	;
+
+assign	: '='
+	| ASOR
+	| ASAND
+	| ASEQ
+	| ASNE
+	| ASLT
+	| ASLE
+	| ASGT
+	| ASGE
+	| ASSHL
+	| ASSHR
+	| ASADD
+	| ASSUB
+	| ASMOD
+	| ASMUL
+	| ASDIV
+	;
+
+inc-dec	: INC
+	| DEC
+	;
+
+unary	: '-'
+	| '+'
+	;
+
+binary	: '\\'
+	| '&'
+	| EQ
+	| NE
+	| '<'
+	| LE
+	| '>'
+	| GE
+	| SHL
+	| SHR
+	| '+'
+	| '-'
+	| '%'
+	| '*'
+	| '/'
+	;
+
+lvalue	: NAME
+	| '*' rvalue
+	| rvalue '[' rvalue ']'
+	;
+
+The precedence and associativity of the binary operators  are as
+follows with operators of the highest precedence first:
+
+OPERATORS	ASSOCIATIVITY
+% * /		left to right
++ -		left to right
+<< >>		left to right
+< >= > >=	???
+== !=		???
+&		left to right
+\		left to right
+?:		right to left
+=...		right to left
