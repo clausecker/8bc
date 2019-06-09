@@ -89,8 +89,8 @@ statement
 	| CASE CONSTANT ':' statement
 	| DEFAULT ':' statement
 	| '[' statement_list ']'
-	| IF '(' control ')' statement else_clause
-	| WHILE '(' control ')' statement
+	| IF '(' rvalue ')' statement else_clause
+	| WHILE '(' rvalue ')' statement
 	| SWITCH '(' rvalue ')' statement		/* not original */
 	| GOTO rvalue ';'
 	| RETURN rvalue ';'
@@ -222,22 +222,10 @@ and_rvalue
 	| and_rvalue '&' equality_rvalue
 	;
 
-	/* logical and */
-and_control
-	: equality_rvalue
-	| and_control '&' equality_rvalue
-	;
-
 	/* bitwise xor */
 xor_rvalue
 	: and_rvalue
 	| xor_rvalue '^' and_rvalue
-	;
-
-	/* logical xor */
-xor_control
-	: and_control
-	| xor_control '^' and_control
 	;
 
 	/* birwise or */
@@ -246,26 +234,11 @@ or_rvalue
 	| or_rvalue '\\' xor_rvalue
 	;
 
-	/* logical or */
-or_control
-	: xor_control
-	| or_control '\\' xor_control
-	;
-
 conditional_rvalue
 	: or_rvalue
-	| or_control '?' rvalue ':' conditional_rvalue
-	;
-
-conditional_control
-	: or_control
-	| or_control '?' rvalue ':' conditional_rvalue
+	| or_rvalue '?' rvalue ':' conditional_rvalue
 	;
 
 rvalue	: conditional_rvalue
-	| lvalue assign rvalue
-	;
-
-control	: conditional_control
 	| lvalue assign rvalue
 	;
