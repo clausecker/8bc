@@ -39,7 +39,7 @@
 %token	SHL		/* the << mark */
 %token	SHR		/* the >> mark */
 
-%nonassoc IFTHEN
+%right ELSE
 %nonassoc PURE
 %right '=' ASOR ASXOR ASAND ASEQ ASNE ASLT ASLE ASGT ASGE ASSHL ASSHR ASADD ASSUB ASMOD ASMUL ASDIV
 %right '?' ':'
@@ -52,8 +52,8 @@
 %left '-'
 %left '+'
 %left '%' '*' '/'
-%right '[' '(' POSTFIX
-%left INC DEC UNARY
+%right INC DEC '[' '('
+%left UNARY
 
 %start	program
 
@@ -105,7 +105,7 @@ statement
 	| CASE CONSTANT ':' statement
 	| DEFAULT ':' statement
 	| '[' statement_list ']'
-	| IF '(' rvalue ')' statement %prec IFTHEN
+	| IF '(' rvalue ')' statement %prec ELSE
 	| IF '(' rvalue ')' ELSE statement
 	| WHILE '(' rvalue ')' statement
 	| SWITCH '(' rvalue ')' statement		/* not original */
@@ -147,8 +147,8 @@ rvalue	: '(' rvalue ')'
 	| '+' rvalue %prec UNARY
 	| '-' rvalue %prec UNARY
 	| '&' lvalue %prec UNARY
-	| lvalue INC %prec POSTFIX
-	| lvalue DEC %prec POSTFIX
+	| lvalue INC
+	| lvalue DEC
 	| rvalue '*' rvalue
 	| rvalue '%' rvalue
 	| rvalue '/' rvalue
