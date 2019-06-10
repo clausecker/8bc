@@ -39,6 +39,22 @@
 %token	SHL		/* the << mark */
 %token	SHR		/* the >> mark */
 
+%nonassoc IFTHEN
+%nonassoc PURE
+%right '=' ASOR ASXOR ASAND ASEQ ASNE ASLT ASLE ASGT ASGE ASSHL ASSHR ASADD ASSUB ASMOD ASMUL ASDIV
+%right '?' ':'
+%left '\\'
+%left '^'
+%left '&'
+%nonassoc EQ NE
+%nonassoc '<' '>' LE GE
+%left SHL SHR
+%left '-'
+%left '+'
+%left '%' '*' '/'
+%right '[' '(' POSTFIX
+%left INC DEC UNARY
+
 %start	program
 
 %%
@@ -89,7 +105,8 @@ statement
 	| CASE CONSTANT ':' statement
 	| DEFAULT ':' statement
 	| '[' statement_list ']'
-	| IF '(' rvalue ')' statement else_clause
+	| IF '(' rvalue ')' statement %prec IFTHEN
+	| IF '(' rvalue ')' ELSE statement
 	| WHILE '(' rvalue ')' statement
 	| SWITCH '(' rvalue ')' statement		/* not original */
 	| GOTO rvalue ';'
@@ -113,11 +130,6 @@ constant_opt
 	| CONSTANT
 	;
 
-else_clause
-	: /* empty */
-	| ELSE statement
-	;
-
 arguments
 	: /* empty */
 	| argument_list
@@ -128,117 +140,54 @@ argument_list
 	| argument_list ',' rvalue
 	;
 
-assign	: '='
-	| ASOR
-	| ASXOR
-	| ASAND
-	| ASEQ
-	| ASNE
-	| ASLT
-	| ASLE
-	| ASGT
-	| ASGE
-	| ASSHL
-	| ASSHR
-	| ASADD
-	| ASSUB
-	| ASMOD
-	| ASMUL
-	| ASDIV
+rvalue	: '(' rvalue ')'
+	| CONSTANT
+	| INC lvalue %prec UNARY
+	| DEC lvalue %prec UNARY
+	| '+' rvalue %prec UNARY
+	| '-' rvalue %prec UNARY
+	| '&' lvalue %prec UNARY
+	| lvalue INC %prec POSTFIX
+	| lvalue DEC %prec POSTFIX
+	| rvalue '*' rvalue
+	| rvalue '%' rvalue
+	| rvalue '/' rvalue
+	| rvalue '+' rvalue
+	| rvalue '-' rvalue
+	| rvalue SHL rvalue
+	| rvalue SHR rvalue
+	| rvalue '<' rvalue
+	| rvalue '>' rvalue
+	| rvalue LE rvalue
+	| rvalue GE rvalue
+	| rvalue EQ rvalue
+	| rvalue NE rvalue
+	| rvalue '&' rvalue
+	| rvalue '^' rvalue
+	| rvalue '\\' rvalue
+	| rvalue '?' rvalue ':' rvalue
+	| lvalue '=' rvalue
+	| lvalue ASMUL rvalue
+	| lvalue ASMOD rvalue
+	| lvalue ASDIV rvalue
+	| lvalue ASADD rvalue
+	| lvalue ASSUB rvalue
+	| lvalue ASSHL rvalue
+	| lvalue ASSHR rvalue
+	| lvalue ASLT rvalue
+	| lvalue ASGT rvalue
+	| lvalue ASLE rvalue
+	| lvalue ASGE rvalue
+	| lvalue ASEQ rvalue
+	| lvalue ASNE rvalue
+	| lvalue ASAND rvalue
+	| lvalue ASXOR rvalue
+	| lvalue ASOR rvalue
+	| rvalue '(' arguments ')'
+	| lvalue %prec PURE
 	;
 
-inc_dec	: INC
-	| DEC
-	;
-
-primary_rvalue
-	: CONSTANT
-	| '(' rvalue ')'
-	;
-
-postfix_rvalue
-	: primary_rvalue
-	| postfix_lvalue
-	| postfix_rvalue '(' arguments ')'
-	| postfix_lvalue inc_dec
-	;
-
-postfix_lvalue
-	: NAME
-	| postfix_rvalue '[' rvalue ']'
-	;
-
-unary_rvalue
-	: postfix_rvalue
-	| lvalue
-	| '+' unary_rvalue
-	| '-' unary_rvalue
-	| inc_dec lvalue
-	| '&' lvalue
-	;
-
-lvalue	: postfix_lvalue
-	| '*' postfix_rvalue
-	;
-
-multiplicative_rvalue
-	: unary_rvalue
-	| multiplicative_rvalue '*' unary_rvalue
-	| multiplicative_rvalue '/' unary_rvalue
-	| multiplicative_rvalue '%' unary_rvalue
-	;
-
-additive_rvalue
-	: multiplicative_rvalue
-	| additive_rvalue '+' multiplicative_rvalue
-	| additive_rvalue '-' multiplicative_rvalue
-	;
-
-shift_rvalue
-	: additive_rvalue
-	| shift_rvalue SHL additive_rvalue
-	| shift_rvalue SHR additive_rvalue
-	;
-
-	/* TODO: find out if relational operators have precedence */
-relational_rvalue
-	: shift_rvalue
-	| shift_rvalue '<' shift_rvalue
-	| shift_rvalue '>' shift_rvalue
-	| shift_rvalue LE shift_rvalue
-	| shift_rvalue GE shift_rvalue
-	;
-
-	/* TODO: find out if equality operators have precedence */
-equality_rvalue
-	: relational_rvalue
-	| relational_rvalue EQ relational_rvalue
-	| relational_rvalue NE relational_rvalue
-	;
-
-	/* bitwise and */
-and_rvalue
-	: equality_rvalue
-	| and_rvalue '&' equality_rvalue
-	;
-
-	/* bitwise xor */
-xor_rvalue
-	: and_rvalue
-	| xor_rvalue '^' and_rvalue
-	;
-
-	/* birwise or */
-or_rvalue
-	: xor_rvalue
-	| or_rvalue '\\' xor_rvalue
-	;
-
-conditional_rvalue
-	: or_rvalue
-	| or_rvalue '?' rvalue ':' conditional_rvalue
-	;
-
-rvalue	: conditional_rvalue
-	| lvalue assign rvalue
+lvalue	: NAME
+	| '*' rvalue %prec UNARY
+	| rvalue '[' rvalue ']'
 	;
