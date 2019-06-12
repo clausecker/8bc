@@ -11,7 +11,7 @@ ESC	\*[0et*'"n]
 
 "/*"			BEGIN COMMENT;
 <COMMENT>"*/"		BEGIN INITIAL;
-<COMMENT>.		/* discard comments */
+<COMMENT>.|\n		/* discard comments */
 
 "=*"			return (ASMUL);
 =%			return (ASMOD);
@@ -38,18 +38,34 @@ ESC	\*[0et*'"n]
 ==			return (EQ);
 !=			return (NE);
 
-[0-9]+			{ /* parse integer constant */ }
-'([^*']|ESC)'		{ /* parse character constant */ }
-\"([^*"]|ESC)*\"	{ /* parse string constant */ }
+[0-9]+			|
+\'([^*'\n]|{ESC})*\'	|
+\"([^*"\n]|{ESC})*\"	return (CONSTANT);
+
+\"			printf("unterminated string constant\n");
+'			printf("unterminated character constant\n");
+
 [A-Za-z_][[:alnum:]_]*	{
 				size_t i;
 				for (i = 0; yytext[i] != '\0'; i++)
 					yytext[i] = toupper(yytext[i]);
 				return (NAME);
 			}
+
 [[:space:]]		/* ignore white space */
-\"			printf("unterminated string constant\n");
-'			printf("unterminated character constant\n");
-[!-?]			return (yytext[0]);
+
+[!-^]			return (yytext[0]);
 [`-~]			return (yytext[0] - 040);	/* convert to 6 bit ASCII */
+
 .			printf("stray %03o\n", (unsigned char)yytext[0]);
+
+%%
+
+extern int
+main()
+{
+	while (yylex())
+		puts(yytext);
+
+	return (0);
+}
