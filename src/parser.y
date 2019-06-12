@@ -150,6 +150,7 @@ expr	: NAME
 	| '-' expr
 	| '*' expr
 	| '&' expr
+	| '^' expr
 	| expr INC
 	| expr DEC
 	| expr '*' expr
