@@ -40,7 +40,6 @@
 %token	SHR		/* the >> mark */
 
 %right ELSE
-%nonassoc PURE
 %right '=' ASOR ASXOR ASAND ASEQ ASNE ASLT ASLE ASGT ASGE ASSHL ASSHR ASADD ASSUB ASMOD ASMUL ASDIV
 %right '?' ':'
 %left '\\'
@@ -52,8 +51,8 @@
 %left '-'
 %left '+'
 %left '%' '*' '/'
-%right INC DEC '[' '('
-%left UNARY
+%right INC DEC
+%right '[' '('
 
 %start	program
 
@@ -105,14 +104,14 @@ statement
 	| CASE CONSTANT ':' statement
 	| DEFAULT ':' statement
 	| '[' statement_list ']'
-	| IF '(' rvalue ')' statement %prec ELSE
-	| IF '(' rvalue ')' ELSE statement
-	| WHILE '(' rvalue ')' statement
-	| SWITCH '(' rvalue ')' statement		/* not original */
-	| GOTO rvalue ';'
-	| RETURN rvalue ';'
+	| IF '(' expr ')' statement %prec ELSE
+	| IF '(' expr ')' statement ELSE statement
+	| WHILE '(' expr ')' statement
+	| SWITCH '(' expr ')' statement		/* not original */
+	| GOTO expr ';'
+	| RETURN expr ';'
 	| BREAK ';'
-	| rvalue ';'
+	| expr ';'
 	| ';'
 
 statement_list
@@ -136,58 +135,55 @@ arguments
 	;
 
 argument_list
-	: rvalue
-	| argument_list ',' rvalue
+	: expr
+	| argument_list ',' expr
 	;
 
-rvalue	: '(' rvalue ')'
+expr	: NAME
 	| CONSTANT
-	| INC lvalue %prec UNARY
-	| DEC lvalue %prec UNARY
-	| '+' rvalue %prec UNARY
-	| '-' rvalue %prec UNARY
-	| '&' lvalue %prec UNARY
-	| lvalue INC
-	| lvalue DEC
-	| rvalue '*' rvalue
-	| rvalue '%' rvalue
-	| rvalue '/' rvalue
-	| rvalue '+' rvalue
-	| rvalue '-' rvalue
-	| rvalue SHL rvalue
-	| rvalue SHR rvalue
-	| rvalue '<' rvalue
-	| rvalue '>' rvalue
-	| rvalue LE rvalue
-	| rvalue GE rvalue
-	| rvalue EQ rvalue
-	| rvalue NE rvalue
-	| rvalue '&' rvalue
-	| rvalue '^' rvalue
-	| rvalue '\\' rvalue
-	| rvalue '?' rvalue ':' rvalue
-	| lvalue '=' rvalue
-	| lvalue ASMUL rvalue
-	| lvalue ASMOD rvalue
-	| lvalue ASDIV rvalue
-	| lvalue ASADD rvalue
-	| lvalue ASSUB rvalue
-	| lvalue ASSHL rvalue
-	| lvalue ASSHR rvalue
-	| lvalue ASLT rvalue
-	| lvalue ASGT rvalue
-	| lvalue ASLE rvalue
-	| lvalue ASGE rvalue
-	| lvalue ASEQ rvalue
-	| lvalue ASNE rvalue
-	| lvalue ASAND rvalue
-	| lvalue ASXOR rvalue
-	| lvalue ASOR rvalue
-	| rvalue '(' arguments ')'
-	| lvalue %prec PURE
-	;
-
-lvalue	: NAME
-	| '*' rvalue %prec UNARY
-	| rvalue '[' rvalue ']'
+	| '(' expr ')'
+	| expr '(' arguments ')'
+	| expr '[' expr ']'
+	| INC expr
+	| DEC expr
+	| '+' expr
+	| '-' expr
+	| '*' expr
+	| '&' expr
+	| expr INC
+	| expr DEC
+	| expr '*' expr
+	| expr '%' expr
+	| expr '/' expr
+	| expr '+' expr
+	| expr '-' expr
+	| expr SHL expr
+	| expr SHR expr
+	| expr '<' expr
+	| expr '>' expr
+	| expr LE expr
+	| expr GE expr
+	| expr EQ expr
+	| expr NE expr
+	| expr '&' expr
+	| expr '^' expr
+	| expr '\\' expr
+	| expr '?' expr ':' expr
+	| expr '=' expr
+	| expr ASMUL expr
+	| expr ASMOD expr
+	| expr ASDIV expr
+	| expr ASADD expr
+	| expr ASSUB expr
+	| expr ASSHL expr
+	| expr ASSHR expr
+	| expr ASLT expr
+	| expr ASGT expr
+	| expr ASLE expr
+	| expr ASGE expr
+	| expr ASEQ expr
+	| expr ASNE expr
+	| expr ASAND expr
+	| expr ASXOR expr
+	| expr ASOR expr
 	;
