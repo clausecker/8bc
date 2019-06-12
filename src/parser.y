@@ -58,133 +58,122 @@
 
 %%
 
-program	: /* empty */
-	| program definition
-	;
+program		: /* empty */
+		| program definition
+		;
 
-definition
-	: NAME initializer ';'				/* simple definition */
-	| NAME '[' vector_length ']' initializer ';'	/* vector definition */
-	| NAME '(' parameters ')' statement		/* function definition */
-	;
+definition	: NAME initializer ';'				/* simple definition */
+		| NAME '[' vector_length ']' initializer ';'	/* vector definition */
+		| NAME '(' parameters ')' statement		/* function definition */
+		;
 
-initializer
-	: /* empty */
-	| ival ival_list
-	;
+initializer	: /* empty */
+		| ival ival_list
+		;
 
-ival_list
-	: /* empty */
-	| ival_list ',' ival
-	;
+ival_list	: /* empty */
+		| ival_list ',' ival
+		;
 
-ival	: CONSTANT
-	| NAME
-	;
+ival		: CONSTANT
+		| NAME
+		;
 
-vector_length
-	: /* empty */
-	| CONSTANT
-	;
+vector_length	: /* empty */
+		| CONSTANT
+		;
 
-parameters
-	: /* empty */
-	| name_list
-	;
+parameters	: /* empty */
+		| name_list
+		;
 
-name_list
-	: NAME
-	| name_list ',' NAME
-	;
+name_list	: NAME
+		| name_list ',' NAME
+		;
 
-statement
-	: AUTO name_const_list ';' statement
-	| EXTRN name_list ';' statement
-	| NAME ':' statement
-	| CASE CONSTANT ':' statement
-	| DEFAULT ':' statement
-	| '[' statement_list ']'
-	| IF '(' expr ')' statement %prec ELSE
-	| IF '(' expr ')' statement ELSE statement
-	| WHILE '(' expr ')' statement
-	| SWITCH '(' expr ')' statement		/* not original */
-	| GOTO expr ';'
-	| RETURN expr ';'
-	| BREAK ';'
-	| expr ';'
-	| ';'
+statement	: AUTO name_const_list ';' statement
+		| EXTRN name_list ';' statement
+		| NAME ':' statement
+		| CASE CONSTANT ':' statement
+		| DEFAULT ':' statement
+		| '[' statement_list ']'
+		| IF '(' expr ')' statement %prec ELSE
+		| IF '(' expr ')' statement ELSE statement
+		| WHILE '(' expr ')' statement
+		| SWITCH '(' expr ')' statement		/* not original */
+		| GOTO expr ';'
+		| RETURN expr ';'
+		| BREAK ';'
+		| expr ';'
+		| ';'
+		;
 
-statement_list
-	:
-	| statement_list statement
-	;
+statement_list	: /* empty */
+		| statement_list statement
+		;
 
-name_const_list
-	: NAME constant_opt
-	| name_const_list ',' NAME constant_opt
-	;
+name_const_list	: NAME constant_opt
+		| name_const_list ',' NAME constant_opt
+		;
 
-constant_opt
-	: /* empty */
-	| CONSTANT
-	;
+constant_opt	: /* empty */
+		| CONSTANT
+		;
 
-arguments
-	: /* empty */
-	| argument_list
-	;
+arguments	: /* empty */
+		| argument_list
+		;
 
-argument_list
-	: expr
-	| argument_list ',' expr
-	;
+argument_list	: expr
+		| argument_list ',' expr
+		;
 
-expr	: NAME
-	| CONSTANT
-	| '(' expr ')'
-	| expr '(' arguments ')'
-	| expr '[' expr ']'
-	| INC expr
-	| DEC expr
-	| '+' expr
-	| '-' expr
-	| '*' expr
-	| '&' expr
-	| '^' expr
-	| expr INC
-	| expr DEC
-	| expr '*' expr
-	| expr '%' expr
-	| expr '/' expr
-	| expr '+' expr
-	| expr '-' expr
-	| expr SHL expr
-	| expr SHR expr
-	| expr '<' expr
-	| expr '>' expr
-	| expr LE expr
-	| expr GE expr
-	| expr EQ expr
-	| expr NE expr
-	| expr '&' expr
-	| expr '^' expr
-	| expr '\\' expr
-	| expr '?' expr ':' expr
-	| expr '=' expr
-	| expr ASMUL expr
-	| expr ASMOD expr
-	| expr ASDIV expr
-	| expr ASADD expr
-	| expr ASSUB expr
-	| expr ASSHL expr
-	| expr ASSHR expr
-	| expr ASLT expr
-	| expr ASGT expr
-	| expr ASLE expr
-	| expr ASGE expr
-	| expr ASEQ expr
-	| expr ASNE expr
-	| expr ASAND expr
-	| expr ASXOR expr
-	| expr ASOR expr
-	;
+expr		: NAME
+		| CONSTANT
+		| '(' expr ')'
+		| expr '(' arguments ')'
+		| expr '[' expr ']'
+		| INC expr
+		| DEC expr
+		| '+' expr
+		| '-' expr
+		| '*' expr
+		| '&' expr
+		| '^' expr
+		| expr INC
+		| expr DEC
+		| expr '*' expr
+		| expr '%' expr
+		| expr '/' expr
+		| expr '+' expr
+		| expr '-' expr
+		| expr SHL expr
+		| expr SHR expr
+		| expr '<' expr
+		| expr '>' expr
+		| expr LE expr
+		| expr GE expr
+		| expr EQ expr
+		| expr NE expr
+		| expr '&' expr
+		| expr '^' expr
+		| expr '\\' expr
+		| expr '?' expr ':' expr
+		| expr '=' expr
+		| expr ASMUL expr
+		| expr ASMOD expr
+		| expr ASDIV expr
+		| expr ASADD expr
+		| expr ASSUB expr
+		| expr ASSHL expr
+		| expr ASSHR expr
+		| expr ASLT expr
+		| expr ASGT expr
+		| expr ASLE expr
+		| expr ASGE expr
+		| expr ASEQ expr
+		| expr ASNE expr
+		| expr ASAND expr
+		| expr ASXOR expr
+		| expr ASOR expr
+		;
