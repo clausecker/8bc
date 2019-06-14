@@ -10,3 +10,7 @@ YFLAGS=-d
 
 lex.c: lex.l parser.c
 
+clean:
+	rm -f 8bc parser.c lex.c y.tab.h *.o
+
+.PHONY: clean
