@@ -1,3 +1,8 @@
+%{
+extern int yyerror(const char *);
+extern int yylex(void);
+%}
+
 %token	CONSTANT
 %token	NAME
 %token	AUTO		/* the AUTO keyword */
