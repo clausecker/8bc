@@ -61,11 +61,13 @@ ESC	\*[0et*'"n]
 
 %%
 
+/*
+ * Supply the next input file and return zero or indicate the absence of
+ * further input files by returning one.  Since we don't need this
+ * feature of lex, this always returns 1.
+ */
 extern int
-main()
+yywrap(void)
 {
-	while (yylex())
-		puts(yytext);
-
-	return (0);
+	return (1);
 }
