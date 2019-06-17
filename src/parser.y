@@ -1,4 +1,6 @@
 %{
+#include "name.h"
+
 extern int yyerror(const char *);
 extern int yylex(void);
 %}
