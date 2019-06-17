@@ -90,8 +90,7 @@ static void blank(void);
 %left '-'
 %left '+'
 %left '%' '*' '/'
-%right INC DEC
-%right '[' '('
+%right INC DEC '[' '('
 
 %start	program
 
