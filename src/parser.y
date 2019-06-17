@@ -1,8 +1,30 @@
 %{
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
 #include "name.h"
 
 extern int yyerror(const char *);
 extern int yylex(void);
+
+/* the tab stop in the output where we last wrote something */
+enum {
+	FLABEL,
+	FINSTR,
+	FOPERAND,
+	FCOMMENT,
+	FEOL,
+};
+
+int field = -1;
+
+static void advance(int);
+static void label(struct expr *);
+static void emit(const char *, ...);
+static void comment(const char *, ...);
+
 %}
 
 %token	CONSTANT
@@ -69,24 +91,40 @@ program		: /* empty */
 		| program definition
 		;
 
-definition	: NAME initializer ';'				/* simple definition */
-		| NAME '[' vector_length ']' initializer ';'	/* vector definition */
-		| NAME '(' parameters ')' statement		/* function definition */
+definition	: define_name initializer ';'			/* simple definition */
+		| define_name '[' vector_length ']' { emit(".+1"); } initializer ';' {
+			/* vector definition */
+			if ($3.value != EMPTY) {
+				if ($3.value < $6.value)
+					fprintf(stderr, NAMEFMT ": too many initializers\n", $1.name);
+
+				if ($6.value < $3.value)
+					emit("*.+%04o", $3.value - $6.value);
+			}
+		}
+		| define_name '(' parameters ')' statement	/* function definition */
 		;
 
-initializer	: /* empty */
-		| ival ival_list
+define_name	: NAME {
+			int i = define(&$1);
+			label(defns + i);
+			comment(NAMEFMT, $1.name);
+			$$ = defns[i];
+		} ;
+
+initializer	: /* empty */		{ $$.value = CONST | 0; }
+		| ival_list
 		;
 
-ival_list	: /* empty */
-		| ival_list ',' ival
+ival_list	: ival			{ $$.value = CONST | 1; }
+		| ival_list ',' ival	{ $$.value = $1.value + 1; }
 		;
 
-ival		: CONSTANT
-		| NAME
+ival		: CONSTANT		{ emit("%04o", $1.value & ~DSPMASK); }
+		| NAME			{ define(&$1); emit("L%04o", $1.value & ~DSPMASK); }
 		;
 
-vector_length	: /* empty */
+vector_length	: /* empty */		{ $$.value = EMPTY; }
 		| CONSTANT
 		;
 
@@ -184,3 +222,111 @@ expr		: NAME
 		| expr ASXOR expr
 		| expr ASOR expr
 		;
+
+%%
+
+/*
+ * Advance output to field f.  If we are already past this field, begin
+ * a new line.
+ */
+static void
+advance(int f)
+{
+	int i;
+
+	if (field >= f) {
+		putchar('\n');
+		field = 0;
+	} else if (field == -1)
+		field = 0;
+
+	for (i = field; i < f; i++)
+		putchar('\t');
+
+	field = f;
+}
+
+/*
+ * If expr is EMPTY, generate a new label named L#### for some octal
+ * number #### and emit it.  The number of the next label to use is
+ * taken from labelno.  Otherwise, if expr is UNDEFN, use the label
+ * number from expr.value.  Otherwise, indicate a redefined label.
+ * Update expr to type LABEL with the label number used.
+ */
+static void
+label(struct expr *expr)
+{
+	int no;
+
+	advance(FLABEL);
+
+	switch (expr->value & DSPMASK) {
+	case LABEL:
+		fprintf(stderr, NAMEFMT ": redefined\n", expr->name);
+		/* FALLTHROUGH */
+
+	case EMPTY:
+		no = labelno++;
+		break;
+
+	case UNDEFN:
+		no = expr->value & ~DSPMASK;
+		break;
+
+	default:
+		fprintf(stderr, NAMEFMT ": unexpected value %05o\n", expr->name, expr->value);
+		abort();
+	}
+
+	printf("L%04o,", no);
+
+	expr->value = no | LABEL;
+}
+
+/*
+ * emit an instruction into the instruction field.  printf-like
+ * syntax can be used.
+ */
+static void emit(const char *fmt, ...)
+{
+	va_list ap;
+
+	advance(FINSTR);
+
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+}
+
+/*
+ * Print a comment at the end of the current line using printf-like
+ * syntax.
+ */
+static void comment(const char *fmt, ...)
+{
+	va_list ap;
+
+	advance(FCOMMENT);
+
+	printf("/ ");
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+}
+
+/*
+ * the main function.  Start the parser and then terminate the output
+ * with a dollar sign.
+ */
+extern int
+main(int argc, char *argv[])
+{
+	(void)argc;
+	(void)argv;
+
+	yyparse();
+	advance(FINSTR);
+	printf("$\n");
+
+	return (EXIT_SUCCESS);
+}

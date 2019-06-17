@@ -2,7 +2,7 @@
 
 enum {
 	/* storage dispositions */
-	EMPTY	= 000000, /* empty symbol table entry */
+	EMPTY	= 000000, /* empty symbol table entry / no disposition */
 	AC	= 000001, /* value is stored in AC */
 	TOKEN	= 000002, /* token returned by yylex() */
 
@@ -19,6 +19,9 @@ enum {
 	MAXDECL = 00200,  /* maximum number of declarations */
 	MAXDEFN = 01000,  /* maximum number of definitions */
 };
+
+/* for printf */
+#define NAMEFMT "%.8s"
 
 /*
  * declaration table
@@ -69,3 +72,11 @@ extern struct expr {
  */
 extern unsigned short ndefns;
 extern struct expr defns[MAXDEFN];
+
+extern int define(struct expr *);
+extern int declare(struct expr *);
+
+/*
+ * The next label to allocate.
+ */
+extern unsigned short labelno;

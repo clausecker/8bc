@@ -1,12 +1,13 @@
 .POSIX:
 
 CC=c99 -D_POSIX_C_SOURCE=200809L
-
-
+CFLAGS=-O3 -Wall
 YFLAGS=-d
 
-8bc: parser.o lex.o
-	$(CC) -o 8bc parser.o lex.o -ly -ll
+OBJ=parser.o lex.o name.o
+
+8bc: $(OBJ)
+	$(CC) -o 8bc $(OBJ) -ly -ll
 
 lex.c: lex.l parser.c
 

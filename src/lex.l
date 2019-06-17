@@ -1,5 +1,6 @@
 %{
 #include <ctype.h>
+#include <string.h>
 
 #include "name.h"
 #include "y.tab.h"
@@ -66,6 +67,13 @@ ESC	\*[0et*'"n]
 				size_t i;
 				for (i = 0; yytext[i] != '\0'; i++)
 					yytext[i] = toupper(yytext[i]);
+
+				if (i > MAXNAME)
+					fprintf(stderr, "name truncated: %s\n", yytext);
+
+				strncpy(yylval.name, yytext, MAXNAME);
+				yylval.value = EMPTY;
+
 				return (NAME);
 			}
 
@@ -74,7 +82,7 @@ ESC	\*[0et*'"n]
 [!-^]			return (yytext[0]);
 [`-~]			return (yytext[0] - 040);	/* convert to 6 bit ASCII */
 
-.			printf("stray %03o\n", (unsigned char)yytext[0]);
+.			fprintf(stderr, "stray %03o\n", (unsigned char)yytext[0]);
 
 %%
 
@@ -92,7 +100,7 @@ nconst(void)
 	for (i = 0; yytext[i] != '\0'; i++)
 		n = n * base + yytext[i] - '0';
 
-	return (n);
+	return (n & 07777);
 }
 
 /*
@@ -104,7 +112,7 @@ cconst(void)
 	const char *s = yytext + 1;
 
 	/* s[0] == '\'' is assumed */
-	return (unescape(&s));
+	return (unescape(&s) & 07777);
 }
 
 /*
@@ -115,21 +123,29 @@ cconst(void)
 static int
 unescape(const char **s)
 {
+	int c;
+
 	if (**s != '*')
 		return (*(*s)++);
 
 	*s += 2;
+	c = (*s)[-1];
 
-	switch ((*s)[-1]) {
+	switch (c) {
 	case '0': return ('\0');
 	case 'e': return (0004); /* ASCII EOF */
 	case '(': return ('{');
 	case ')': return ('}');
 	case 't': return ('\t');
-	case '*': return ('*');
-	case '\'': return ('\'');
-	case '\"': return ('\"');
 	case '\n': return ('\n');
-	default: yyerror("unrecognised escape sequence");
+	default:
+		fprintf(stderr, "unrecognised escape sequence %c\n", c);
+
+		/* FALLTHROUGH */
+
+	case '*':
+	case '\'':
+	case '\"':
+		return (c);
 	}
 }
