@@ -54,6 +54,7 @@ enum {
  * dispositions may occur in this case.
  */
 #define YYSTYPE struct expr
+extern YYSTYPE yylval;
 extern unsigned short ndecls;
 extern struct expr {
 	char name[MAXNAME];
