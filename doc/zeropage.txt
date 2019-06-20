@@ -7,8 +7,7 @@
 0050--0053 runtime function pointers (frame management)
       0056 return value
       0057 return address
-0060--0077 argument lvalues
-0100--0177 scratch registers
+0060--0177 scratch registers
 
 #calling convention
 
@@ -19,45 +18,19 @@ the procedure as JMS does.
 
 #frame management
 
+## the frame record
+(nframe << 4 | narg)
+return_address
+arguments[narg]
+template[nframe]
+
+## utility routines
 ECF (JMS I 0050)  establish call frame
-(argc << 6 | framesize)
-(lvalues: framesize words)
-(argv: argc words)
-
-copy framesize words from lvalues to 0100
-copy argc words from 0020 to argv
-write argc pointers to argv to 0060
-write return address (at location of instruction - 1) to 0057
-clear AC
-continue after argv
-
-RCF (JMS I 0051)  restore call frame
 (frame)
 
-frame points to just after an EAR
-same action as EAR but with an indirect activation record
-except we don't copy parameters from 0020
-clear AC
-continue after frame
-
-IAV (JMS I 0052)  initialize automatic variables
-(len)
-(data: len words)
-(var: len words)
-
-copy len words from data to var
-clear AC
-continue after data
-
-JSR (JMS I 0053)  jump subroutine, save, and restore
-(len << 6 | offset)
-(buf)
-(fun)
-
-copy len words from 0100 + offset to buf
-then JMS I fun
-then copy len words from buf to 0100 + offset
-continue after fun
+copy the caller's return address to 0057 and return_address
+copy narg words from 0020 to arguments
+copy nframe words from template to 0060
 
 RET (JMP I 0057)  return from subroutine
 

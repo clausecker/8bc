@@ -12,7 +12,9 @@ enum {
 	UNDECL	= 040000, /* undeclared at label L#### */
 	UNDEFN  = 040000, /* undefined at label L#### */
 	CONST	= 050000, /* constant value */
-	INDEX   = 060000, /* index into the declaration table */
+	LSTACK	= 060000, /* lvalue on the stack */
+	RSTACK  = 070000, /* rvalue on the stack */
+//	INDEX   = 060000, /* index into the declaration table */
 	DSPMASK	= 070000, /* disposition mask */
 
 	MAXNAME = 8,      /* maximal name length */
