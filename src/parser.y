@@ -339,7 +339,9 @@ emitvars(void)
 	blank();
 
 	/* beginning of stack */
-	emit("L%04o = %04o", stacklabel.value & ~DSPMASK, 0060 + nframe);
+	advance(FLABEL);
+	printf("L%04o=\t%04o", stacklabel.value & ~DSPMASK, 0060 + nframe);
+	field = FINSTR;
 	comment("STACK ORIGIN");
 
 	/* meta data */
