@@ -15,6 +15,7 @@ enum {
 	LSTACK	= 0060000, /* lvalue on the stack */
 	RSTACK  = 0070000, /* rvalue on the stack */
 	AUTOVAR = 0100000, /* offset into automatic variable area */
+	ARG     = 0110000, /* function argument */
 	DSPMASK	= 0170000, /* disposition mask */
 	MAXNAME = 8,      /* maximal name length */
 	MAXDECL = 00200,  /* maximum number of declarations */

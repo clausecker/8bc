@@ -146,8 +146,20 @@ parameters	: /* empty */
 		| param_list
 		;
 
-param_list	: NAME
-		| param_list ',' NAME
+param_list	: param
+		| param_list ',' param
+		;
+
+param		: NAME {
+			int i;
+
+			$1.value = ARG | narg;
+			i = declare(&$1);
+			if (decls[i].value != $1.value)
+				fprintf(stderr, NAMEFMT ": redeclared\n", $1.name);
+
+			narg++;
+		}
 		;
 
 statement	: AUTO auto_list ';' statement
@@ -181,7 +193,7 @@ name_const	: NAME constant_opt {
 
 			$1.value = AUTOVAR | varspace;
 			i = declare(&$1);
-			if (decls[i].value != (AUTOVAR | varspace))
+			if (decls[i].value != $1.value)
 				fprintf(stderr, NAMEFMT ": redeclared\n", $1.name);
 			else
 				varspace++;
@@ -386,19 +398,26 @@ emitvars(void)
 	/* meta data */
 	label(&framelabel);
 	emit("%04o", nframe << 4 | narg);
-	comment("CALL FRAME");
+	comment("CALL FRAME (%o REGS, %o ARGS)", nframe, narg);
 
 	/* return address */
 	emit("*.+1");
 	comment("RETURN ADDRESS");
 
 	/* arguments */
-	if (narg > 0)
+	if (narg > 0) {
 		emit("*.+%o", narg);
+		comment("FUNCTION ARGUMENTS");
+	}
 
 	/* template */
-	for (i = 0; i < nframe; i++)
-		emit("%s", lit(frame[i]));
+	if (nframe > 0) {
+		emit("%s", lit(frame[0]));
+		comment("REGISTER TEMPLATE");
+
+		for (i = 1; i < nframe; i++)
+			emit("%s", lit(frame[i]));
+	}
 
 	/* automatic variables */
 	if (varspace > 0) {
@@ -534,6 +553,10 @@ static const char *lit(int v)
 		sprintf(buf, "L%04o+%04o", varlabel.value & ~DSPMASK,
 		    v & ~DSPMASK);
 		break;
+
+	case ARG:
+		sprintf(buf, "L%04o+%04o", framelabel.value & ~DSPMASK,
+		    (v & ~DSPMASK) + 2);
 
 	case RVALUE:
 	case CONST:
