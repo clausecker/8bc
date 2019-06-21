@@ -17,7 +17,7 @@ static void dca(int), lda(int), tad(int), spill(void);
 static struct expr savelabel = { "(save)", 0 }, framelabel = { "(frame)", 0 },
     stacklabel = { "(stack)", 0}, varlabel = { "(var)", 0 };
 static unsigned short nframe, nvar, varspace, nstack, tos, narg;
-static unsigned short frame[80], vars[256], varlabels[64], varoffsets[64];
+static unsigned short frame[80], vars[256];
 
 static void newframe(const char *), emitvars(void);
 static int newvar(void);
@@ -134,7 +134,7 @@ ival_list	: ival			{ $$.value = CONST | 1; }
 		| ival_list ',' ival	{ $$.value = $1.value + 1; }
 		;
 
-ival		: CONSTANT		{ emit("%04o", $1.value & ~DSPMASK); }
+ival		: CONSTANT		{ emit("%s", lit($1.value)); }
 		| NAME			{ define(&$1); emit("L%04o", $1.value & ~DSPMASK); }
 		;
 
@@ -150,7 +150,7 @@ name_list	: NAME
 		| name_list ',' NAME
 		;
 
-statement	: AUTO name_const_list ';' statement
+statement	: AUTO auto_list ';' statement
 		| EXTRN name_list ';' statement
 		| NAME ':' statement
 		| CASE CONSTANT ':' statement
@@ -172,12 +172,24 @@ statement_list	: /* empty */
 		| statement_list statement
 		;
 
-name_const_list	: NAME constant_opt
-		| name_const_list ',' NAME constant_opt
+auto_list	: name_const
+		| auto_list ',' name_const
 		;
 
-constant_opt	: /* empty */
-		| CONSTANT
+name_const	: NAME constant_opt {
+			int i;
+
+			$1.value = AUTOVAR | varspace;
+			i = declare(&$1);
+			if (decls[i].value != (AUTOVAR | varspace))
+				fprintf(stderr, NAMEFMT ": redeclared\n", $1.name);
+			else
+				varspace++;
+		}
+		;
+
+constant_opt	: /* empty */ { vars[varspace] = CONST | 0; }
+		| CONSTANT { vars[varspace] = $1.value; }
 		;
 
 arguments	: /* empty */
@@ -366,7 +378,10 @@ emitvars(void)
 		blank();
 		label(&varlabel);
 
-		for (i = 0; i < varspace; i++)
+		emit("%s", lit(vars[0]));
+		comment("AUTOMATIC VARIABLES");
+
+		for (i = 1; i < varspace; i++)
 			emit("%s", lit(vars[i]));
 	}
 
@@ -471,12 +486,11 @@ static const char *lit(int v)
 	switch(v & DSPMASK) {
 	case LABEL:
 	case UNDEFN:
-	case RVALUE:
 		sprintf(buf, "L%04o", v & ~DSPMASK);
 		break;
 
 	case LVALUE:
-		sprintf(buf, "I L%04o", v & ~DSPMASK);
+		sprintf(buf, "I %04o", v & ~DSPMASK);
 		break;
 
 	case LSTACK:
@@ -489,6 +503,12 @@ static const char *lit(int v)
 		    v & ~DSPMASK);
 		break;
 
+	case AUTOVAR:
+		sprintf(buf, "L%04o+%04o", varlabel.value & ~DSPMASK,
+		    v & ~DSPMASK);
+		break;
+
+	case RVALUE:
 	case CONST:
 		sprintf(buf, "%04o", v & ~DSPMASK);
 		break;

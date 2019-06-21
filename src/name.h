@@ -2,21 +2,20 @@
 
 enum {
 	/* storage dispositions */
-	EMPTY	= 000000, /* empty symbol table entry / no disposition */
-	AC	= 000001, /* value is stored in AC */
-	TOKEN	= 000002, /* token returned by yylex() */
+	EMPTY	= 0000000, /* empty symbol table entry / no disposition */
+	AC	= 0000001, /* value is stored in AC */
+	TOKEN	= 0000002, /* token returned by yylex() */
 
-	LVALUE	= 010000, /* address of value is stored in register */
-	RVALUE	= 020000, /* value is stored in register */
-	LABEL	= 030000, /* internal or external at label L#### */
-	UNDECL	= 040000, /* undeclared at label L#### */
-	UNDEFN  = 040000, /* undefined at label L#### */
-	CONST	= 050000, /* constant value */
-	LSTACK	= 060000, /* lvalue on the stack */
-	RSTACK  = 070000, /* rvalue on the stack */
-//	INDEX   = 060000, /* index into the declaration table */
-	DSPMASK	= 070000, /* disposition mask */
-
+	LVALUE	= 0010000, /* address of value is stored in zero page */
+	RVALUE	= 0020000, /* value is stored in zero page */
+	LABEL	= 0030000, /* internal or external at label L#### */
+	UNDECL	= 0040000, /* undeclared at label L#### */
+	UNDEFN  = 0040000, /* undefined at label L#### */
+	CONST	= 0050000, /* constant value */
+	LSTACK	= 0060000, /* lvalue on the stack */
+	RSTACK  = 0070000, /* rvalue on the stack */
+	AUTOVAR = 0100000, /* offset into automatic variable area */
+	DSPMASK	= 0170000, /* disposition mask */
 	MAXNAME = 8,      /* maximal name length */
 	MAXDECL = 00200,  /* maximum number of declarations */
 	MAXDEFN = 01000,  /* maximum number of definitions */
