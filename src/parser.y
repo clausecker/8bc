@@ -143,15 +143,15 @@ vector_length	: /* empty */		{ $$.value = EMPTY; }
 		;
 
 parameters	: /* empty */
-		| name_list
+		| param_list
 		;
 
-name_list	: NAME
-		| name_list ',' NAME
+param_list	: NAME
+		| param_list ',' NAME
 		;
 
 statement	: AUTO auto_list ';' statement
-		| EXTRN name_list ';' statement
+		| EXTRN extrn_list ';' statement
 		| NAME ':' statement
 		| CASE CONSTANT ':' statement
 		| DEFAULT ':' statement
@@ -188,6 +188,19 @@ name_const	: NAME constant_opt {
 		}
 		;
 
+extrn_list	: extrn_decl
+		| extrn_list ',' extrn_decl
+		;
+
+extrn_decl	: NAME {
+			int i;
+
+			define(&$1);
+			i = declare(&$1);
+			if ($1.value != decls[i].value)
+				fprintf(stderr, NAMEFMT ": incompatible redeclaration\n", $1.name);
+		}
+
 constant_opt	: /* empty */ { vars[varspace] = CONST | 0; }
 		| CONSTANT { vars[varspace] = $1.value; }
 		;
@@ -200,7 +213,20 @@ argument_list	: expr
 		| argument_list ',' expr
 		;
 
-expr		: NAME
+expr		: NAME {
+			int i;
+
+
+			for (i = ndecls - 1; i >= 0; i--)
+				if (memcmp(decls[i].name, $1.name, MAXNAME) == 0)
+					goto found;
+
+			/* not found */
+			fprintf(stderr, NAMEFMT ": undeclared\n", $1.name);
+			exit(EXIT_FAILURE);
+
+		found:	$$ = decls[i];
+		}
 		| CONSTANT
 		| '(' expr ')'			{ $$ = $2; }
 		| expr '(' arguments ')'
@@ -307,6 +333,7 @@ newframe(const char *name)
 	varspace = 0;
 	nstack = 0;
 	tos = 0;
+	ndecls = 0;
 
 	framelabel.value = labelno++ | UNDEFN;
 	stacklabel.value = labelno++ | UNDEFN;
