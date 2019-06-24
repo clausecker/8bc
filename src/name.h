@@ -5,22 +5,30 @@ enum {
 	EMPTY	= 0000000, /* empty symbol table entry / no disposition */
 	AC	= 0000001, /* value is stored in AC */
 	TOKEN	= 0000002, /* token returned by yylex() */
+	UNDEF   = 0000003, /* undefined value */
 
-	LVALUE	= 0010000, /* address of value is stored in zero page */
-	RVALUE	= 0020000, /* value is stored in zero page */
-	LABEL	= 0030000, /* internal or external at label L#### */
-	UNDECL	= 0040000, /* undeclared at label L#### */
-	UNDEFN  = 0040000, /* undefined at label L#### */
-	CONST	= 0050000, /* constant value */
-	LSTACK	= 0060000, /* lvalue on the stack */
-	RSTACK  = 0070000, /* rvalue on the stack */
-	AUTOVAR = 0100000, /* offset into automatic variable area */
-	ARG     = 0110000, /* function argument */
+	RVALUE	= 0010000, /* value is stored in zero page */
+	LVALUE	= 0110000, /* address of value is stored in zero page */
+	LABEL	= 0020000, /* internal or external at label L#### */
+	UNDECL	= 0120000, /* undeclared at label L#### */
+	UNDEFN  = 0120000, /* undefined at label L#### */
+	CONST	= 0030000, /* constant value */
+	RSTACK  = 0040000, /* rvalue on the stack */
+	LSTACK	= 0140000, /* lvalue on the stack */
+	AUTOVAR = 0050000, /* offset into automatic variable area */
+	ARG     = 0150000, /* function argument */
 	DSPMASK	= 0170000, /* disposition mask */
+	TYPMASK = 0070000, /* disposition mask with the MSB clear */
 	MAXNAME = 8,      /* maximal name length */
 	MAXDECL = 00200,  /* maximum number of declarations */
 	MAXDEFN = 01000,  /* maximum number of definitions */
 };
+
+/* convenience macros */
+#define dsp(a) ((a) & DSPMASK)
+#define val(a) ((a) & ~DSPMASK)
+#define onstack(a) (((a) & TYPMASK) == RSTACK)
+#define bothconst(a, b) (dsp(a) == CONST && dsp(b) == CONST)
 
 /* for printf */
 #define NAMEFMT "%.8s"

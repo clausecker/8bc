@@ -10,20 +10,35 @@ extern int yyerror(const char *);
 extern int yylex(void);
 
 /* AC manipulation */
-static unsigned short ac = EMPTY;
-static void dca(int), lda(int), tad(int), spill(void);
+/*
+ * ac is the value that is in the accumulator.  If AC contains a value
+ * of type CONST, it is not actually loaded into AC until needed.  The
+ * true content of AC in this case is 0.
+ *
+ * acstate says about the content of AC:
+ * ACCLEAR: AC is clear (only if AC is of disposition CONST)
+ * CONST | ...: AC holds that value (only if AC is of disposition CONST)
+ * ACDIRTY: AC needs to be written back (only if AC is not of disposition CONST)
+ * ACUNDEF: AC holds an unknown value
+ */
+enum { ACCLEAR = CONST | 0, ACDIRTY, ACUNDEF };
+static unsigned short ac, acstate;
+static void dca(int), lda(int), tad(int), and(int), cia(void), cma(void), sal(void);
+static void reify(void);
+static int writeback(void);
 
 /* call frame management */
+enum { FRAMESIZ = 00120, FRAMEORIG = 0060, VARSIZ = 00400 };
 static struct expr savelabel = { "(save)", 0 }, framelabel = { "(frame)", 0 },
     stacklabel = { "(stack)", 0}, varlabel = { "(var)", 0 };
-static unsigned short nframe, nvar, varspace, nstack, tos, narg;
-static unsigned short frame[80], vars[256];
+static unsigned short nframe, nvar, varspace, nstack, narg;
+static signed short tos;
+static unsigned short frame[FRAMESIZ], vars[VARSIZ];
 
 static void newframe(const char *), emitvars(void);
-static int newvar(void);
-static void vardata(int);
-static int stalloc(void);
-static void stfree(int);
+static int spill(int);
+static void pop(int);
+static int push(int);
 
 /* formatted assembly code output */
 /* the tab stop in the output where we last wrote something */
@@ -113,6 +128,7 @@ definition	: define_name { comment(NAMEFMT, $1.name); } initializer ';'	/* simpl
 		}
 		| define_name { newframe($1.name); } '(' parameters ')' statement {
 			/* function definition */
+			reify(); /* DEBUG */
 			emitvars();
 		}
 		;
@@ -245,18 +261,41 @@ expr		: NAME {
 		| expr '[' expr ']'
 		| INC expr
 		| DEC expr
-		| '+' expr
-		| '-' expr
-		| '*' expr
-		| '&' expr
-		| '^' expr
+		| '+' expr %prec INC		{ $$ = $2; }
+		| '-' expr %prec INC		{
+			lda($2.value);
+			pop($2.value);
+			cia();
+			$$.value = push(RSTACK);
+		}
+		| '*' expr %prec INC
+		| '&' expr %prec INC
+		| '^' expr %prec INC		{
+			lda($2.value);
+			pop($2.value);
+			cma();
+			$$.value = push(RSTACK);
+		}
 		| expr INC
 		| expr DEC
 		| expr '*' expr
 		| expr '%' expr
 		| expr '/' expr
-		| expr '+' expr
-		| expr '-' expr
+		| expr '+' expr			{
+			lda($3.value);
+			pop($3.value);
+			tad($1.value);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}
+		| expr '-' expr			{
+			lda($3.value);
+			pop($3.value);
+			cia();
+			tad($1.value);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}
 		| expr SHL expr
 		| expr SHR expr
 		| expr '<' expr
@@ -265,11 +304,38 @@ expr		: NAME {
 		| expr GE expr
 		| expr EQ expr
 		| expr NE expr
-		| expr '&' expr
-		| expr '^' expr
+		| expr '&' expr			{
+			lda($3.value);
+			pop($3.value);
+			and($1.value);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}
+		| expr '^' expr			{
+			/* compute $1 + $3 - (($1 & $3) << 1) */
+			int tmp;
+
+			lda($3.value);
+			tad($1.value);
+			tmp = push(RSTACK);
+			lda($1.value);
+			and($3.value);
+			sal();
+			cia();
+			tad(tmp);
+			pop(tmp);
+			pop($3.value);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}			
 		| expr '\\' expr
 		| expr '?' expr ':' expr
-		| expr '=' expr
+		| expr '=' expr			{
+			lda($3.value);
+			pop($3.value);
+			dca($1.value);
+			$$.value = $1.value;
+		}
 		| expr ASMUL expr
 		| expr ASMOD expr
 		| expr ASDIV expr
@@ -289,6 +355,258 @@ expr		: NAME {
 		;
 
 %%
+
+/*
+ * write the content of AC to value and then clear AC.
+ */
+static void
+dca(int value)
+{
+	reify();
+	emit("DCA %s", lit(spill(value)));
+	acstate = ac = CONST | 0;
+}
+
+/*
+ * load AC with the given value.  
+ */
+static void
+lda(int value)
+{
+	/* loads are idempotent */
+	if (ac == value)
+		return;
+
+	writeback();
+	ac = CONST | 0;
+	tad(value);
+	ac = value;
+}
+
+/*
+ * Add b to AC.  The value of AC must be fixed up by the caller.
+ * As a special case, adding a constant to a constant does not produce
+ * code.
+ */
+static void
+tad(int b)
+{
+	int a = ac;
+
+	if (bothconst(a, b)) {
+		ac = val(a + b) | CONST;
+		return;
+	}
+
+	/* on writeback, reload */
+	if (writeback()) {
+		/* adding the constant first generates better code */
+		if (dsp(b) == CONST) {
+			int tmp = b;
+			b = a;
+			a = tmp;
+		}
+
+		lda(a);
+	}
+
+	reify();
+	emit("TAD %s", lit(spill(b)));
+
+	acstate = ACUNDEF;
+	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * Compute the bitwise and of b and AC.  The value of AC must be fixed
+ * up by the caller.
+ */
+static void
+and(int b)
+{
+	int a = ac;
+
+	if (bothconst(a, b)) {
+		ac = val(a & b) | CONST;
+		return;
+	}
+
+	/* on writeback, reload */
+	if (writeback()) {
+		/* placing the constant first generates better code */
+		if (dsp(b) == CONST) {
+			int tmp = b;
+			b = a;
+			a = tmp;
+		}
+
+		lda(a);
+	}
+
+	reify();
+	emit("AND %s", lit(spill(b)));
+
+	acstate = ACUNDEF;
+	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * compute the two's complement negation of AC (Complement and Increment Ac)
+ */
+static void
+cia(void)
+{
+	int a = ac;
+
+	if (dsp(a) == CONST) {
+		ac = val(-a) | CONST;
+		return;
+	}
+
+	reify();
+	emit("CIA");
+	acstate = ACUNDEF;
+	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * compute the one's complement negation of AC (CoMplement Ac)
+ */
+static void
+cma(void)
+{
+	int a = ac;
+
+	if (dsp(a) == CONST) {
+		ac = val(~a) | CONST;
+		return;
+	}
+
+	reify();
+	emit("CMA");
+	acstate = ACUNDEF;
+	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * add A to itself (Shift A Left)
+ */
+static void
+sal(void)
+{
+	int a = ac;
+
+	if (dsp(a) == CONST) {
+		ac = val(a << 1) | CONST;
+		return;
+	}
+
+	reify();
+	emit("CLL RAL");
+	acstate = ACUNDEF;
+	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * Perform a writeback of AC if needed.  Return 1 if a writeback was
+ * performed, 0 otherwise.  We don't call dca() here to avoid recursion.
+ */
+static int
+writeback(void)
+{
+	if (dsp(ac) != CONST && acstate == ACDIRTY) {
+		emit("DCA %s", lit(ac));
+		ac = CONST | 0;
+		acstate = ACCLEAR;
+		return (1);
+	} else
+		return (0);
+}
+
+/*
+ * make AC actually contain the value stored in ac and that writeback
+ * has been performed.
+ */
+static void
+reify(void)
+{
+	int acval = ac, loc;
+
+	if (writeback())
+		lda(acval);
+
+	if (dsp(ac) != CONST)
+		return;
+
+	if (ac == acstate)
+		return;
+
+	switch (val(ac)) {
+	case 00000:
+		emit("CLA");
+		break;
+
+	case 00001:
+		emit("CLA IAC");
+		break;
+
+	case 00002:
+		emit("CLA CLL IAC RAL");
+		break;
+
+	case 00003:
+		emit("CLA CLL CML IAC RAL");
+		break;
+
+	case 00004:
+		emit("CLA CLL IAC RTL");
+		break;
+
+	case 00006:
+		emit("CLA CLL CML IAC RTL");
+		break;
+
+	case 02000:
+		emit("CLA CLL CML RTR");
+		break;
+
+	case 03777:
+		emit("CLA CLL CMA RAR");
+		break;
+
+	case 04000:
+		emit("CLA CLL CML RAR");
+		break;
+
+	case 05777:
+		emit("CLA CLL CMA RTR");
+		break;
+
+	case 06000:
+		emit("CLA CLL CML IAC RTL");
+		break;
+
+	case 07775:
+		emit("CLA CLL CMA RTL");
+		break;
+
+	case 07776:
+		emit("CLA CLL CMA RAL");
+		break;
+
+	case 07777:
+		emit("CLA CMA");
+		break;
+
+	default:
+		loc = spill(ac);
+		lda(loc);
+		acstate = acval;
+		return;
+	}
+
+	ac = UNDEFN;
+}
 
 /*
  * call frame management.
@@ -319,7 +637,7 @@ expr		: NAME {
  *     but cannot be initialised.
  *
  * tos
- *     the first stack register that is currently free.
+ *     the first stack register that is in use.
  *
  * stacklabel
  *     a label referring to the first stack register.  This label is set
@@ -344,7 +662,7 @@ newframe(const char *name)
 	nvar = 0;
 	varspace = 0;
 	nstack = 0;
-	tos = 0;
+	tos = -1;
 	ndecls = 0;
 
 	framelabel.value = labelno++ | UNDEFN;
@@ -356,6 +674,7 @@ newframe(const char *name)
 	comment(NAMEFMT, name);
 	emit("ECF");
 	emit("%s", lit(framelabel.value));
+	acstate = ac = CONST | 0;
 }
 
 /*
@@ -411,12 +730,9 @@ emitvars(void)
 	}
 
 	/* template */
-	if (nframe > 0) {
-		emit("%s", lit(frame[0]));
-		comment("REGISTER TEMPLATE");
-
-		for (i = 1; i < nframe; i++)
-			emit("%s", lit(frame[i]));
+	for (i = 0; i < nframe; i++) {
+		emit("%s", lit(frame[i]));
+		comment("REGISTER %04o", FRAMEORIG + i);
 	}
 
 	/* automatic variables */
@@ -437,7 +753,96 @@ emitvars(void)
 		label(&savelabel);
 		emit("%04o", nstack);
 		emit("*.+%04o", nstack);
+		comment("SAVED REGISTERS");
 	}
+}
+
+/*
+ * allocate a frame register with the value of spill.  Then return a
+ * frame register that can be used as an argument to TAD, JMP, JMS, ISZ,
+ * and DCA.  If the frame is full, return an error.  If a frame register
+ * has already been allocated for this value, return that register.
+ */
+static int
+spill(int value)
+{
+	int i, newdsp;
+
+	switch (value & DSPMASK) {
+	/* cases where no spill is needed */
+	case LVALUE:
+	case RVALUE:
+	case LSTACK:
+	case RSTACK:
+		return (value);
+
+	/* LVALUE cases */
+	case LABEL:
+	case UNDEFN:
+	case AUTOVAR:
+	case ARG:
+		newdsp = LVALUE;
+		break;
+
+	/* RVALUE cases */
+	default:
+		fprintf(stderr, "cannot spill %06o\n", value);
+		/* FALLTHROUGH */
+
+	case CONST:
+		newdsp = RVALUE;
+		break;
+	}
+
+	/* let's see if we already have it */
+	for (i = 0; i < nframe; i++)
+		if (frame[i] == value)
+			goto found;
+
+	/* not found */
+	frame[nframe] = value;
+	if (nframe >= FRAMESIZ)
+		fprintf(stderr, "frame overflown @ %04o by %06o\n", nframe, value);
+
+	return (nframe++ + FRAMEORIG | newdsp);
+
+found:	return (i + FRAMEORIG | newdsp);
+}
+
+/*
+ * Remove value from the stack.  If value is not on the stack, do
+ * nothing.  Else if val(value) != tos - 1, signal a programming error.
+ */
+static void
+pop(int value)
+{
+	if (!onstack(value))
+		return;
+
+	if (val(value) != tos)
+		fprintf(stderr, "cannot pop %06o\n", value);
+	else
+		tos--;
+
+	if (ac == value && acstate == ACDIRTY)
+		acstate = ACUNDEF;
+}
+
+/*
+ * if AC holds a constant, return that constant.  If not, allocate a new
+ * stack register and indicate that AC needs to be written back to it.
+ * Use disp for its disposition.  disp should be RSTACK or LSTACK.
+ */
+static int
+push(int disp)
+{
+	if (dsp(ac) == CONST)
+		return (ac);
+
+	acstate = ACDIRTY;
+	ac = ++tos | disp;
+
+	return (ac);
 }
 
 /*
@@ -512,12 +917,14 @@ emit(const char *fmt, ...)
 	advance(FINSTR);
 
 	va_start(ap, fmt);
-
 	n = vprintf(fmt, ap);
+	va_end(ap);
+
 	if (n >= 8)
 		field = FOPERAND;
+	else if (n >= 16)
+		field = FCOMMENT;
 
-	va_end(ap);
 }
 
 /*

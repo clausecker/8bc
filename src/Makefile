@@ -1,7 +1,7 @@
 .POSIX:
 
-CC=c99 -D_POSIX_C_SOURCE=200809L -Os -g
-CFLAGS=-O3 -Wall
+CC=cc -std=c99 -D_POSIX_C_SOURCE=200809L
+CFLAGS=-O3 -g -Wall -Wno-parentheses
 YFLAGS=-d
 
 OBJ=parser.o lex.o name.o
