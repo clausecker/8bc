@@ -326,19 +326,14 @@ expr		: NAME {
 		}
 		| expr '^' expr {
 			/* compute $1 + $3 - (($1 & $3) << 1) */
-			int tmp;
-
 			lda($3.value);
-			tad($1.value);
-			tmp = push(RSTACK);
-			lda($1.value);
-			and($3.value);
+			and($1.value);
 			sal();
 			cia();
-			tad(tmp);
-			pop(tmp);
 			pop($3.value);
+			tad($3.value);
 			pop($1.value);
+			tad($1.value);
 			$$.value = push(RSTACK);
 		}			
 		| expr '\\' expr
