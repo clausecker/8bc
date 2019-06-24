@@ -336,7 +336,17 @@ expr		: NAME {
 			tad($1.value);
 			$$.value = push(RSTACK);
 		}			
-		| expr '\\' expr
+		| expr '\\' expr {
+			/* compute $1 + $3 - ($1 & $3) */
+			lda($3.value),
+			and($1.value);
+			cia();
+			pop($3.value);
+			tad($3.value);
+			pop($1.value);
+			tad($1.value);
+			$$.value = push(RSTACK);
+		}
 		| expr '?' expr ':' expr
 		| expr '=' expr {
 			lda($3.value);
