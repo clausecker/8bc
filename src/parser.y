@@ -990,6 +990,7 @@ static const char *lit(int v)
 	case ARG:
 		sprintf(buf, "L%04o+%04o", framelabel.value & ~DSPMASK,
 		    (v & ~DSPMASK) + 2);
+		break;
 
 	case RVALUE:
 	case CONST:
