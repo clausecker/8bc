@@ -23,7 +23,7 @@ extern int yylex(void);
  */
 enum { ACCLEAR = CONST | 0, ACDIRTY, ACUNDEF };
 static unsigned short ac, acstate;
-static void dca(int), lda(int), tad(int), and(int), cia(void), cma(void), sal(void);
+static void dca(int), lda(int), tad(int), and(int), jmp(int), cia(void), cma(void), sal(void);
 static void reify(void);
 static int writeback(void);
 
@@ -189,8 +189,17 @@ statement	: AUTO auto_list ';' statement
 		| WHILE '(' expr ')' statement
 		| SWITCH '(' expr ')' statement		/* not original */
 		| GOTO expr ';'
-		| RETURN expr ';'
-		| RETURN ';'
+		| RETURN expr ';' {
+			pop($2.value);
+			writeback();
+			lda($2.value);
+			dca(RVALUE | 00056);
+			jmp(RVALUE | 00057);
+		}
+		| RETURN ';' {
+			writeback();
+			jmp(RVALUE | 00057);
+		}
 		| BREAK ';'
 		| expr ';'
 		| ';'
@@ -256,13 +265,17 @@ expr		: NAME {
 		found:	$$ = decls[i];
 		}
 		| CONSTANT
-		| '(' expr ')'			{ $$ = $2; }
+		| '(' expr ')' {
+			$$ = $2;
+		}
 		| expr '(' arguments ')'
 		| expr '[' expr ']'
 		| INC expr
 		| DEC expr
-		| '+' expr %prec INC		{ $$ = $2; }
-		| '-' expr %prec INC		{
+		| '+' expr %prec INC {
+			$$.value = $2.value;
+		}
+		| '-' expr %prec INC {
 			lda($2.value);
 			pop($2.value);
 			cia();
@@ -270,7 +283,7 @@ expr		: NAME {
 		}
 		| '*' expr %prec INC
 		| '&' expr %prec INC
-		| '^' expr %prec INC		{
+		| '^' expr %prec INC {
 			lda($2.value);
 			pop($2.value);
 			cma();
@@ -281,14 +294,14 @@ expr		: NAME {
 		| expr '*' expr
 		| expr '%' expr
 		| expr '/' expr
-		| expr '+' expr			{
+		| expr '+' expr {
 			lda($3.value);
 			pop($3.value);
 			tad($1.value);
 			pop($1.value);
 			$$.value = push(RSTACK);
 		}
-		| expr '-' expr			{
+		| expr '-' expr {
 			lda($3.value);
 			pop($3.value);
 			cia();
@@ -304,14 +317,14 @@ expr		: NAME {
 		| expr GE expr
 		| expr EQ expr
 		| expr NE expr
-		| expr '&' expr			{
+		| expr '&' expr {
 			lda($3.value);
 			pop($3.value);
 			and($1.value);
 			pop($1.value);
 			$$.value = push(RSTACK);
 		}
-		| expr '^' expr			{
+		| expr '^' expr {
 			/* compute $1 + $3 - (($1 & $3) << 1) */
 			int tmp;
 
@@ -330,7 +343,7 @@ expr		: NAME {
 		}			
 		| expr '\\' expr
 		| expr '?' expr ':' expr
-		| expr '=' expr			{
+		| expr '=' expr {
 			lda($3.value);
 			pop($3.value);
 			dca($1.value);
@@ -448,6 +461,19 @@ and(int b)
 
 	acstate = ACUNDEF;
 	ac = UNDEF; /* caller must fix this */
+}
+
+/*
+ * jump to the address of the argument. If the argument is in AC, also write
+ * back AC first.
+ */
+static void
+jmp(int addr)
+{
+	if (ac == addr && acstate == ACDIRTY)
+		writeback();
+
+	emit("JMP %s", lit(spill(addr)));
 }
 
 /*
