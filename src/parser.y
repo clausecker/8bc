@@ -194,11 +194,11 @@ statement	: AUTO auto_list ';' statement
 			writeback();
 			lda($2.value);
 			dca(RVALUE | 00056);
-			jmp(RVALUE | 00057);
+			jmp(LVALUE | 00057);
 		}
 		| RETURN ';' {
 			writeback();
-			jmp(RVALUE | 00057);
+			jmp(LVALUE | 00057);
 		}
 		| BREAK ';'
 		| expr ';'
