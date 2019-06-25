@@ -632,11 +632,10 @@ reify(void)
 	default:
 		loc = spill(ac);
 		lda(loc);
-		acstate = acval;
-		return;
 	}
 
-	ac = UNDEFN;
+	comment("CONST %04o", val(acval));
+	acstate = acval;
 }
 
 /*
@@ -695,6 +694,7 @@ newframe(const char *name)
 	nstack = 0;
 	tos = -1;
 	ndecls = 0;
+	narg = 0;
 
 	framelabel.value = labelno++ | UNDEFN;
 	stacklabel.value = labelno++ | UNDEFN;
@@ -951,10 +951,10 @@ emit(const char *fmt, ...)
 	n = vprintf(fmt, ap);
 	va_end(ap);
 
-	if (n >= 8)
-		field = FOPERAND;
-	else if (n >= 16)
+	if (n >= 16)
 		field = FCOMMENT;
+	else if (n >= 8)
+		field = FOPERAND;
 
 }
 
