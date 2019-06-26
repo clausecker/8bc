@@ -9,6 +9,9 @@
 extern int yyerror(const char *);
 extern int yylex(void);
 
+/* value conversion */
+static int l2rval(int), r2lval(int);
+
 /* AC manipulation */
 /*
  * ac is the value that is in the accumulator.  If AC contains a value
@@ -21,11 +24,11 @@ extern int yylex(void);
  * ACDIRTY: AC needs to be written back (only if AC is not of disposition CONST)
  * ACUNDEF: AC holds an unknown value
  */
-enum { ACCLEAR = CONST | 0, ACDIRTY, ACUNDEF };
+enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 0, ACUNDEF = UNDEF | 1 };
 static unsigned short ac, acstate;
 static void dca(int), lda(int), tad(int), and(int), jmp(int), cia(void), cma(void), sal(void);
 static void reify(void);
-static int writeback(void);
+static int dirty(int), writeback(void);
 
 /* call frame management */
 enum { FRAMESIZ = 00120, FRAMEORIG = 0060, VARSIZ = 00400 };
@@ -34,9 +37,10 @@ static struct expr savelabel = { "(save)", 0 }, framelabel = { "(frame)", 0 },
 static unsigned short nframe, nvar, varspace, nstack, narg;
 static signed short tos;
 static unsigned short frame[FRAMESIZ], vars[VARSIZ];
+static char infunc = 0;
 
 static void newframe(const char *), emitvars(void);
-static int spill(int);
+static int toframe(int), spill(int);
 static void pop(int);
 static int push(int);
 
@@ -118,7 +122,7 @@ program		: /* empty */
 definition	: define_name { comment(NAMEFMT, $1.name); } initializer ';'	/* simple definition */
 		| define_name '[' vector_length ']' { emit(".+1"); comment(NAMEFMT, $1.name); } initializer ';' {
 			/* vector definition */
-			if ($3.value != EMPTY) {
+			if ($3.value != UNDEF) {
 				if ($3.value < $6.value)
 					fprintf(stderr, NAMEFMT ": too many initializers\n", $1.name);
 
@@ -151,11 +155,20 @@ ival_list	: ival			{ $$.value = CONST | 1; }
 		;
 
 ival		: CONSTANT		{ emit("%s", lit($1.value)); }
-		| NAME			{ define(&$1); emit("L%04o", $1.value & ~DSPMASK); }
+		| NAME			{
+			define(&$1);
+			emit("%s", lit($1.value));
+		}
 		;
 
-vector_length	: /* empty */		{ $$.value = EMPTY; }
-		| CONSTANT
+vector_length	: /* empty */		{ $$.value = UNDEF; }
+		| CONSTANT {
+			if (dsp($1.value) != CONST) {
+				fprintf(stderr, "cannot use string constant for vector length\n");
+				$$.value = UNDEF;
+			} else
+				$$.value = $1.value;
+			}
 		;
 
 parameters	: /* empty */
@@ -169,12 +182,10 @@ param_list	: param
 param		: NAME {
 			int i;
 
-			$1.value = ARG | narg;
+			$1.value = LARG | narg++;
 			i = declare(&$1);
 			if (decls[i].value != $1.value)
 				fprintf(stderr, NAMEFMT ": redeclared\n", $1.name);
-
-			narg++;
 		}
 		;
 
@@ -188,17 +199,23 @@ statement	: AUTO auto_list ';' statement
 		| IF '(' expr ')' statement ELSE statement
 		| WHILE '(' expr ')' statement
 		| SWITCH '(' expr ')' statement		/* not original */
-		| GOTO expr ';'
+		| GOTO expr ';' {
+			writeback();
+			ac = CONST | 0;
+			reify();
+			jmp($2.value);
+			pop($2.value);
+		}
 		| RETURN expr ';' {
 			pop($2.value);
 			writeback();
 			lda($2.value);
 			dca(RVALUE | 00056);
-			jmp(LVALUE | 00057);
+			jmp(RVALUE | 00057);
 		}
 		| RETURN ';' {
 			writeback();
-			jmp(LVALUE | 00057);
+			jmp(RVALUE | 00057);
 		}
 		| BREAK ';'
 		| expr ';'
@@ -216,7 +233,7 @@ auto_list	: name_const
 name_const	: NAME constant_opt {
 			int i;
 
-			$1.value = AUTOVAR | varspace;
+			$1.value = LAUTO | varspace;
 			i = declare(&$1);
 			if (decls[i].value != $1.value)
 				fprintf(stderr, NAMEFMT ": redeclared\n", $1.name);
@@ -281,8 +298,8 @@ expr		: NAME {
 			cia();
 			$$.value = push(RSTACK);
 		}
-		| '*' expr %prec INC
-		| '&' expr %prec INC
+		| '*' expr %prec INC { $$.value = r2lval($2.value); }
+		| '&' expr %prec INC { $$.value = l2rval($2.value); }
 		| '^' expr %prec INC {
 			lda($2.value);
 			pop($2.value);
@@ -373,6 +390,75 @@ expr		: NAME {
 		;
 
 %%
+
+static int l2rval(int), r2lval(int);
+
+/*
+ * Convert an lvalue to an rvalue.  This obtains the address of the
+ * lvalue.  If the address cannot be taken, UNDEF is returned.
+ */
+static int
+l2rval(int value)
+{
+	switch (dsp(value)) {
+	/* LVALUE cases: convert directly */
+	case LVALUE:
+	case LSTACK:
+	case LAUTO:
+	case LARG:
+	case LLABEL:
+	case LUNDECL:
+		return (value & ~LMASK);
+
+	default:
+		fprintf(stderr, "cannot convert %06o to rvalue\n", value);
+		return (UNDEF);
+	}
+}
+
+/*
+ * Convert an rvalue to an lvalue.  This interprets the value of the
+ * rvalue as an address.  If the argument refers to an lvalue, a stack
+ * variable might be allocated; value becomes invalid in the process.
+ */
+static int
+r2lval(int value)
+{
+	switch (dsp(value)) {
+	case CONST:
+		if (val(value) < 00200)
+			/*
+			 * fix me: need to distinguish this to catch
+			 * rvalue dereferences
+			 */
+			return (val(value) | RVALUE);
+		else
+			return (toframe(value) | LVALUE);
+
+	case RVALUE:
+	case RLABEL:
+	case RUNDECL:
+	case RSTACK:
+	case RAUTO:
+	case RARG:
+		return (value | LMASK);
+
+	/* need to dereference */
+	case LVALUE:
+	case LLABEL:
+	case LUNDECL:
+	case LSTACK:
+	case LAUTO:
+	case LARG:
+		lda(value);
+		pop(value);
+		return (push(RSTACK) | LMASK);
+
+	default:
+		fprintf(stderr, "cannot convert %06o to lvalue\n", value);
+		return (UNDEF);
+	}
+}
 
 /*
  * write the content of AC to value and then clear AC.
@@ -471,12 +557,16 @@ and(int b)
 /*
  * jump to the address of the argument. If the argument is in AC, also write
  * back AC first.
+ *
+ * TODO: make sure we can only jump to lvalues.
  */
 static void
 jmp(int addr)
 {
-	if (ac == addr && acstate == ACDIRTY)
-		writeback();
+	writeback();
+
+	if (!islval(addr))
+		fprintf(stderr, "lvalue expected\n");
 
 	emit("JMP %s", lit(spill(addr)));
 }
@@ -552,6 +642,19 @@ writeback(void)
 		return (1);
 	} else
 		return (0);
+}
+
+/*
+ * Returns nonzero if value refers to a stack register that hasn't been
+ * written back.
+ */
+static int
+dirty(int value)
+{
+	if (acstate != ACDIRTY || !onstack(value) || !onstack(ac))
+		return (0);
+	else
+		return (val(value) == val(ac));
 }
 
 /*
@@ -696,10 +799,12 @@ newframe(const char *name)
 	ndecls = 0;
 	narg = 0;
 
-	framelabel.value = labelno++ | UNDEFN;
-	stacklabel.value = labelno++ | UNDEFN;
-	varlabel.value = labelno++ | UNDEFN;
-	savelabel.value = EMPTY;
+	framelabel.value = labelno++ | LUNDECL;
+	stacklabel.value = labelno++ | LUNDECL;
+	varlabel.value = labelno++ | LUNDECL;
+	savelabel.value = UNDEF;
+
+	infunc = 1;
 
 	emit("0"); /* return address */
 	comment(NAMEFMT, name);
@@ -736,6 +841,8 @@ static void
 emitvars(void)
 {
 	size_t i;
+
+	infunc = 0;
 
 	blank();
 
@@ -779,7 +886,7 @@ emitvars(void)
 	}
 
 	/* stack save area; emit only if needed */
-	if (savelabel.value != EMPTY) {
+	if (savelabel.value != UNDEF) {
 		blank();
 		label(&savelabel);
 		emit("%04o", nstack);
@@ -789,41 +896,13 @@ emitvars(void)
 }
 
 /*
- * allocate a frame register with the value of spill.  Then return a
- * frame register that can be used as an argument to TAD, JMP, JMS, ISZ,
- * and DCA.  If the frame is full, return an error.  If a frame register
- * has already been allocated for this value, return that register.
+ * allocate a frame register with value and return its index.  The
+ * caller has to perform appropriate conversions.
  */
 static int
-spill(int value)
+toframe(int value)
 {
-	int i, newdsp;
-
-	switch (value & DSPMASK) {
-	/* cases where no spill is needed */
-	case LVALUE:
-	case RVALUE:
-	case LSTACK:
-	case RSTACK:
-		return (value);
-
-	/* LVALUE cases */
-	case LABEL:
-	case UNDEFN:
-	case AUTOVAR:
-	case ARG:
-		newdsp = LVALUE;
-		break;
-
-	/* RVALUE cases */
-	default:
-		fprintf(stderr, "cannot spill %06o\n", value);
-		/* FALLTHROUGH */
-
-	case CONST:
-		newdsp = RVALUE;
-		break;
-	}
+	int i;
 
 	/* let's see if we already have it */
 	for (i = 0; i < nframe; i++)
@@ -835,9 +914,58 @@ spill(int value)
 	if (nframe >= FRAMESIZ)
 		fprintf(stderr, "frame overflown @ %04o by %06o\n", nframe, value);
 
-	return (nframe++ + FRAMEORIG | newdsp);
+	return (nframe++ + FRAMEORIG);
 
-found:	return (i + FRAMEORIG | newdsp);
+found:	return (i + FRAMEORIG);
+}
+
+/*
+ * allocate a frame register with the value of spill.  Then return a
+ * frame register that can be used as an argument to TAD, JMP, JMS, ISZ,
+ * and DCA.  If the frame is full, return an error.  If a frame register
+ * has already been allocated for this value, return that register.
+ */
+static int
+spill(int value)
+{
+	int newdsp;
+
+	newdsp = RVALUE | value & LMASK;
+
+	switch (dsp(value)) {
+	/* cases where no spill is needed */
+	case LVALUE:
+	case RVALUE:
+	case LSTACK:
+	case RSTACK:
+		return (value);
+
+	/* LVALUE cases */
+	case LAUTO:
+	case LARG:
+		value &= ~LMASK;
+		break;
+
+	case LLABEL:
+	case LUNDECL:
+		value = val(value) | LLABEL;
+		break;		
+
+	default:
+		fprintf(stderr, "cannot spill %06o\n", value);
+		break;
+
+	/* RVALUE cases */
+	case RLABEL:
+	case RUNDECL:
+		value = val(value) | LLABEL;
+		break;
+
+	case CONST:
+		break;
+	}
+
+	return (toframe(value) | newdsp);
 }
 
 /*
@@ -855,7 +983,7 @@ pop(int value)
 	else
 		tos--;
 
-	if (ac == value && acstate == ACDIRTY)
+	if (dirty(value))
 		acstate = ACUNDEF;
 }
 
@@ -898,7 +1026,7 @@ advance(int f)
 }
 
 /*
- * If expr is EMPTY, generate a new label named L#### for some octal
+ * If expr is UNDEF, generate a new label named L#### for some octal
  * number #### and emit it.  The number of the next label to use is
  * taken from labelno.  Otherwise, if expr is UNDEFN, use the label
  * number from expr.value.  Otherwise, indicate a redefined label.
@@ -907,31 +1035,32 @@ advance(int f)
 static void
 label(struct expr *expr)
 {
-	int no;
-
-	advance(FLABEL);
+	int no, type = expr->value & TYPMASK;
 
 	switch (expr->value & DSPMASK) {
-	case LABEL:
+	case LLABEL:
+	case RLABEL:
 		fprintf(stderr, NAMEFMT ": redefined\n", expr->name);
 		/* FALLTHROUGH */
 
-	case EMPTY:
+	case UNDEF:
 		no = labelno++;
 		break;
 
-	case UNDEFN:
+	case LUNDECL:
+	case RUNDECL:
 		no = expr->value & ~DSPMASK;
 		break;
 
 	default:
 		fprintf(stderr, NAMEFMT ": unexpected value %05o\n", expr->name, expr->value);
-		abort();
+		no = 07777;
 	}
 
+	advance(FLABEL);
 	printf("L%04o,", no);
 
-	expr->value = no | LABEL;
+	expr->value = no | RLABEL | type;
 }
 
 /*
@@ -968,8 +1097,8 @@ static const char *lit(int v)
 	static char buf[17];
 
 	switch(v & DSPMASK) {
-	case LABEL:
-	case UNDEFN:
+	case LLABEL:
+	case LUNDECL:
 		sprintf(buf, "L%04o", v & ~DSPMASK);
 		break;
 
@@ -987,12 +1116,22 @@ static const char *lit(int v)
 		    v & ~DSPMASK);
 		break;
 
-	case AUTOVAR:
+	case LAUTO:
+		sprintf(buf, "I L%04o+%04o", varlabel.value & ~DSPMASK,
+		    v & ~DSPMASK);
+		break;
+
+	case RAUTO:
 		sprintf(buf, "L%04o+%04o", varlabel.value & ~DSPMASK,
 		    v & ~DSPMASK);
 		break;
 
-	case ARG:
+	case LARG:
+		sprintf(buf, "I L%04o+%04o", framelabel.value & ~DSPMASK,
+		    (v & ~DSPMASK) + 2);
+		break;
+
+	case RARG:
 		sprintf(buf, "L%04o+%04o", framelabel.value & ~DSPMASK,
 		    (v & ~DSPMASK) + 2);
 		break;

@@ -50,10 +50,10 @@ extern int
 define(struct expr *expr) {
 	int i;
 
-	expr->value = EMPTY;
+	expr->value = UNDEF;
 	i = addname(defns, &ndefns, MAXDEFN, "definition", expr);
-	if (defns[i].value == EMPTY)
-		defns[i].value = labelno++ | UNDEFN;
+	if (defns[i].value == UNDEF)
+		defns[i].value = labelno++ | LUNDECL;
 
 	expr->value = defns[i].value;
 

@@ -72,7 +72,7 @@ ESC	\*[0et*'"n]
 					fprintf(stderr, "name truncated: %s\n", yytext);
 
 				strncpy(yylval.name, yytext, MAXNAME);
-				yylval.value = EMPTY;
+				yylval.value = UNDEF;
 
 				return (NAME);
 			}
