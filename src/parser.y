@@ -689,7 +689,7 @@ reify(void)
 		break;
 
 	case 00003:
-		emit("CLA CLL CML IAC RAL");
+		emit("CLA STL IAC RAL");
 		break;
 
 	case 00004:
@@ -697,39 +697,39 @@ reify(void)
 		break;
 
 	case 00006:
-		emit("CLA CLL CML IAC RTL");
+		emit("CLA STL IAC RTL");
 		break;
 
 	case 02000:
-		emit("CLA CLL CML RTR");
+		emit("CLA STL RTR");
 		break;
 
 	case 03777:
-		emit("CLA CLL CMA RAR");
+		emit("STA CLL RAR");
 		break;
 
 	case 04000:
-		emit("CLA CLL CML RAR");
+		emit("CLA STL RAR");
 		break;
 
 	case 05777:
-		emit("CLA CLL CMA RTR");
+		emit("STA CLL RTR");
 		break;
 
 	case 06000:
-		emit("CLA CLL CML IAC RTL");
+		emit("CLA STL IAC RTL");
 		break;
 
 	case 07775:
-		emit("CLA CLL CMA RTL");
+		emit("STA CLL RTL");
 		break;
 
 	case 07776:
-		emit("CLA CLL CMA RAL");
+		emit("STA CLL RAL");
 		break;
 
 	case 07777:
-		emit("CLA CMA");
+		emit("STA");
 		break;
 
 	default:
