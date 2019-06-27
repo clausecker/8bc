@@ -24,6 +24,10 @@ return_address
 arguments[narg]
 template[nframe]
 
+## the save area
+pointer to frame record
+saved_registers[nstack]
+
 ## utility routines
 ECF (JMS I 0050)  establish call frame
 (frame)
@@ -32,10 +36,17 @@ copy the caller's return address to 0057 and return_address
 copy narg words from 0020 to arguments
 copy nframe words from template to 0060
 
-RET (JMP I 0057)  return from subroutine
+CAL (JMS I 0051)  high-level function call
+(nregs)
+(save-area)
 
-returns to caller, assuming call frame was previously
-established with ECF or RCF
+Copy nregs registers from 0060 + nframe to the save area.
+
+RCF (JMS I 0052) restore call frame
+
+like ECF but take frame address from save area.  There must be
+a single instruction between CAL and RCF.  Also restore the
+registers saved by CAL.
 
 #arithmetic
 

@@ -259,12 +259,22 @@ constant_opt	: /* empty */ { vars[varspace] = CONST | 0; }
 		| CONSTANT { vars[varspace] = $1.value; }
 		;
 
-arguments	: /* empty */
-		| argument_list
+arguments	: /* empty */ { $$.value = 0; }
+		| argument_list { $$.value = $1.value; }
 		;
 
-argument_list	: expr
-		| argument_list ',' expr
+argument_list	: expr {
+			lda($1.value);
+			pop($1.value);
+			dca(RVALUE | 0020);
+			$$.value = 1;
+		}
+		| argument_list ',' expr {
+			lda($3.value);
+			pop($3.value);
+			dca(RVALUE | 0020 + $1.value);
+			$$.value = $1.value + 1;
+		}
 		;
 
 expr		: NAME {
@@ -285,7 +295,24 @@ expr		: NAME {
 		| '(' expr ')' {
 			$$ = $2;
 		}
-		| expr '(' arguments ')'
+		| expr '(' arguments ')' {
+			if ($3.value >= 16)
+				fprintf(stderr, "too many arguments to function call\n");
+
+			if (savelabel.value == UNDEF)
+				savelabel.value = labelno++ | LUNDECL;
+			writeback();
+			emit("CAL");
+			emit("%04o", tos + 1);
+			emit("%s", lit(savelabel.value));
+			if (tos + 1 > nstack)
+				nstack = tos + 1;
+			emit("JMS %s", lit(spill($1.value)));
+			pop($1.value);
+			emit("RCF");
+			lda(RVALUE | 0056);
+			$$.value = push(RVALUE);
+		}
 		| expr '[' expr ']'
 		| INC expr
 		| DEC expr
@@ -565,8 +592,8 @@ jmp(int addr)
 {
 	writeback();
 
-	if (!islval(addr))
-		fprintf(stderr, "lvalue expected\n");
+/*	if (!islval(addr))
+		fprintf(stderr, "lvalue expected\n"); */
 
 	emit("JMP %s", lit(spill(addr)));
 }
@@ -799,8 +826,8 @@ newframe(const char *name)
 	ndecls = 0;
 	narg = 0;
 
-	framelabel.value = labelno++ | LUNDECL;
 	stacklabel.value = labelno++ | LUNDECL;
+	framelabel.value = labelno++ | LUNDECL;
 	varlabel.value = labelno++ | LUNDECL;
 	savelabel.value = UNDEF;
 
@@ -889,7 +916,7 @@ emitvars(void)
 	if (savelabel.value != UNDEF) {
 		blank();
 		label(&savelabel);
-		emit("%04o", nstack);
+		emit("%s", lit(framelabel.value));
 		emit("*.+%04o", nstack);
 		comment("SAVED REGISTERS");
 	}
@@ -1035,7 +1062,7 @@ advance(int f)
 static void
 label(struct expr *expr)
 {
-	int no, type = expr->value & TYPMASK;
+	int no, type = expr->value & LMASK;
 
 	switch (expr->value & DSPMASK) {
 	case LLABEL:
@@ -1049,7 +1076,7 @@ label(struct expr *expr)
 
 	case LUNDECL:
 	case RUNDECL:
-		no = expr->value & ~DSPMASK;
+		no = val(expr->value);
 		break;
 
 	default:
