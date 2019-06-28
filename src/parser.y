@@ -198,15 +198,7 @@ param		: NAME {
 
 statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
-		| NAME ':' statement {
-			int i;
-
-			i = declare(&$1);
-			label(decls + i);
-			$$ = decls[i];
-		}
-		| CASE CONSTANT ':' statement
-		| DEFAULT ':' statement
+		| label ':' statement
 		| '[' statement_list ']'
 		| IF '(' expr ')' statement %prec ELSE
 		| IF '(' expr ')' statement ELSE statement
@@ -232,6 +224,25 @@ statement	: AUTO auto_list ';' statement
 		| BREAK ';'
 		| expr ';' { pop($1.value); }
 		| ';'
+		;
+
+		/*
+		 * we cannot use the "NAME ':' statement" rule from the
+		 * reference grammar as that would output the label
+		 * after the statement.  With an extra non-terminal
+		 * "label" and associated rules, we can reduce "label"
+		 * before "statement" is reduced, emitting labels in the
+		 * right order.
+		 */
+label		: NAME {
+			int i;
+
+			i = declare(&$1);
+			label(decls + i);
+			$$ = decls[i];
+		}
+		| CASE CONSTANT
+		| DEFAULT
 		;
 
 statement_list	: /* empty */
