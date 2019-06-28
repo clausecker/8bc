@@ -22,8 +22,8 @@ enum {
 	LMASK   = 0100000, /* lvalue mask */
 
 	MAXNAME = 8,      /* maximal name length */
-	MAXDECL = 00200,  /* maximum number of declarations */
-	MAXDEFN = 01000,  /* maximum number of definitions */
+	MAXDECL = 00120,  /* maximum number of declarations */
+	MAXDEFN = 00400,  /* maximum number of definitions */
 };
 
 /* convenience macros */
