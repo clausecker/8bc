@@ -136,7 +136,8 @@ definition	: define_name { comment(NAMEFMT, $1.name); } initializer ';'	/* simpl
 			int i;
 
 			/* function definition */
-			reify(); /* DEBUG */
+			writeback();
+			jmp(LVALUE | 00057);
 			emitvars();
 
 			/* find undeclared variables */
@@ -202,22 +203,29 @@ statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
 		| label ':' statement
 		| '[' statement_list ']'
-		| if_clause statement %prec ELSE {
+		| IF if_control statement %prec ELSE {
 			if (acstate != (CONST | 0))
 				acundef();
-			label(&$1);
+			label(&$2);
 		}
-		| if_clause statement ELSE {
+		| IF if_control statement ELSE {
 			newlabel(&$$, "(else)");
 			jmp($$.value);
 			acclear();
-			label(&$1);
+			label(&$2);
 		} statement {
 			if (acstate != (CONST | 0))
 				acundef();
-			label(&$4);
+			label(&$5);
 		}
-		| WHILE '(' expr ')' statement
+		| WHILE {
+			newlabel(&$$, "(while)");
+			label(&$$);
+		} if_control statement {
+			jmp($2.value);
+			acclear();
+			label(&$3);
+		}
 		| SWITCH '(' expr ')' statement		/* not original */
 		| GOTO expr ';' {
 			jmp($2.value);
@@ -258,16 +266,16 @@ label		: NAME {
 		| DEFAULT
 		;
 
-if_clause	: IF '(' expr ')' {
+if_control	: '(' expr ')' {
 			newlabel(&$$, "(if)");
-			if (dsp($3.value) == CONST) {
+			if (dsp($2.value) == CONST) {
 				lda(CONST | 0);
 				reify();
-				if ($3.value == (CONST | 0))
+				if ($2.value == (CONST | 0))
 					jmp($$.value);
 			} else {
-				lda($3.value);
-				pop($3.value);
+				lda($2.value);
+				pop($2.value);
 				cjmp("SNA CLA", $$.value);
 				acclear();
 			}
