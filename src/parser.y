@@ -427,10 +427,10 @@ expr		: NAME {
 		| expr '-' expr { $$.value = sub($1.value, $3.value); }
 		| expr SHL expr
 		| expr SHR expr
-		| expr '<' expr { $$.value = cmp($1.value, $3.value, "SPA", "<"); }
-		| expr '>' expr { $$.value = cmp($1.value, $3.value, "SMA SZA", ">"); }
-		| expr LE expr  { $$.value = cmp($1.value, $3.value, "SPA SNA", "<="); }
-		| expr GE expr  { $$.value = cmp($1.value, $3.value, "SMA", ">="); }
+		| expr '<' expr { $$.value = cmp($1.value, $3.value, "SZL", "<"); }
+		| expr '>' expr { $$.value = cmp($1.value, $3.value, "SZA SNL", ">"); }
+		| expr LE expr  { $$.value = cmp($1.value, $3.value, "SZL SNA", "<="); }
+		| expr GE expr  { $$.value = cmp($1.value, $3.value, "SNL", ">="); }
 		| expr EQ expr  { $$.value = cmp($1.value, $3.value, "SNA", "=="); }
 		| expr NE expr  { $$.value = cmp($1.value, $3.value, "SZA", "!="); }
 		| expr '&' expr {
@@ -776,12 +776,24 @@ sub(int a, int b)
  * generate code to compare a and b with group 2 operation skip to
  * implement comparison operator op.
  *
- * TODO: implement constant folding.
+ * TODO: implement proper constant folding.
  */
 static int
 cmp(int a, int b, const char *skip, const char *op)
 {
-	pop(sub(a, b));
+	if (!bothconst(a, b))
+		pop(sub(a, b));
+	else {
+		/* kludge: fake a comparison by setting the flags correctly */
+		switch ((a > b) - (b > a)) {
+		case -1: emit("CLA STL"); break;
+		case  0: emit("CLA CLL"); break;
+		case  1: emit("STA CLL"); break;
+		}
+
+		comment("KLUDGE");
+	}
+
 	emit("%s CLA", skip);
 	comment("AC %s 0 ? 1 : 0", op);
 	emit(" CLA IAC");
