@@ -645,8 +645,7 @@ tad(int b)
 	else
 		emit("TAD %s", lit(spill(b)));
 
-	acstate = ACUNDEF;
-	ac = UNDEF; /* caller must fix this */
+	acundef(); /* caller must fix this */
 }
 
 /*
@@ -678,8 +677,7 @@ and(int b)
 	reify();
 	emit("AND %s", lit(spill(b)));
 
-	acstate = ACUNDEF;
-	ac = UNDEF; /* caller must fix this */
+	acundef();
 }
 
 /*
@@ -726,8 +724,7 @@ cia(void)
 
 	reify();
 	emit("CIA");
-	acstate = ACUNDEF;
-	ac = UNDEF; /* caller must fix this */
+	acundef();
 }
 
 /*
@@ -745,8 +742,7 @@ cma(void)
 
 	reify();
 	emit("CMA");
-	acstate = ACUNDEF;
-	ac = UNDEF; /* caller must fix this */
+	acundef();
 }
 
 /*
@@ -764,8 +760,7 @@ sal(void)
 
 	reify();
 	emit("CLL RAL");
-	acstate = ACUNDEF;
-	ac = UNDEF; /* caller must fix this */
+	acundef();
 }
 
 /*
