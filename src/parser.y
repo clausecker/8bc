@@ -31,6 +31,9 @@ static void cia(void), cma(void), sal(void);
 static void reify(void), acundef(void), acclear(void);
 static int dirty(int), writeback(void);
 
+/* code-gen fragments */
+static int add(int, int), sub(int, int), cmp(int, int, const char *, const char *);
+
 /* call frame management */
 enum { FRAMESIZ = 00120, FRAMEORIG = 0060, VARSIZ = 00400 };
 static struct expr savelabel = { "(save)", 0 }, framelabel = { "(frame)", 0 },
@@ -369,13 +372,7 @@ expr		: NAME {
 			lda(RVALUE | 0056);
 			$$.value = push(RSTACK);
 		}
-		| expr '[' expr ']' {
-			lda($3.value);
-			pop($3.value);
-			tad($1.value);
-			pop($1.value);
-			$$.value = r2lval(push(RSTACK));
-		}
+		| expr '[' expr ']' { $$.value = r2lval(add($1.value, $3.value)); }
 		| INC expr {
 			lda($2.value);
 			tad(CONST | 1);
@@ -388,15 +385,8 @@ expr		: NAME {
 			dca($2.value);
 			$$ = $2;
 		}
-		| '+' expr %prec INC {
-			$$.value = $2.value;
-		}
-		| '-' expr %prec INC {
-			lda($2.value);
-			pop($2.value);
-			cia();
-			$$.value = push(RSTACK);
-		}
+		| '+' expr %prec INC { $$.value = $2.value; }
+		| '-' expr %prec INC { $$.value = sub(CONST | 0, $2.value); }
 		| '*' expr %prec INC { $$.value = r2lval($2.value); }
 		| '&' expr %prec INC { $$.value = l2rval($2.value); }
 		| '^' expr %prec INC {
@@ -433,61 +423,16 @@ expr		: NAME {
 		| expr '*' expr
 		| expr '%' expr
 		| expr '/' expr
-		| expr '+' expr {
-			lda($3.value);
-			pop($3.value);
-			tad($1.value);
-			pop($1.value);
-			$$.value = push(RSTACK);
-		}
-		| expr '-' expr {
-			lda($3.value);
-			pop($3.value);
-			cia();
-			tad($1.value);
-			pop($1.value);
-			$$.value = push(RSTACK);
-		}
+		| expr '+' expr { $$.value = add($1.value, $3.value); }
+		| expr '-' expr { $$.value = sub($1.value, $3.value); }
 		| expr SHL expr
 		| expr SHR expr
-		| expr '<' expr
-		| expr '>' expr
-		| expr LE expr
-		| expr GE expr
-		| expr EQ expr {
-			lda($3.value);
-			pop($3.value);
-			cia();
-			tad($1.value);
-			pop($1.value);
-			if (dsp(ac) == CONST)
-				ac = ac == 0 | CONST;
-			else {
-				emit("SNA CLA");
-				comment("AC == 0 ? 1 : 0");
-				emit(" CLA IAC");
-				acundef();
-			}
-
-			$$.value = push(RSTACK);
-		}
-		| expr NE expr {
-			lda($3.value);
-			pop($3.value);
-			cia();
-			tad($1.value);
-			pop($1.value);
-			if (dsp(ac) == CONST)
-				ac = ac != 0 | CONST;
-			else {
-				emit("SZA CLA");
-				comment("AC != 0 ? 1 : 0");
-				emit(" CLA IAC");
-				acundef();
-			}
-
-			$$.value = push(RSTACK);
-		}
+		| expr '<' expr { $$.value = cmp($1.value, $3.value, "SPA", "<"); }
+		| expr '>' expr { $$.value = cmp($1.value, $3.value, "SMA SZA", ">"); }
+		| expr LE expr  { $$.value = cmp($1.value, $3.value, "SPA SNA", "<="); }
+		| expr GE expr  { $$.value = cmp($1.value, $3.value, "SMA", ">="); }
+		| expr EQ expr  { $$.value = cmp($1.value, $3.value, "SNA", "=="); }
+		| expr NE expr  { $$.value = cmp($1.value, $3.value, "SZA", "!="); }
 		| expr '&' expr {
 			lda($3.value);
 			pop($3.value);
@@ -793,6 +738,56 @@ sal(void)
 	reify();
 	emit("CLL RAL");
 	acundef();
+}
+
+static int add(int, int), sub(int, int);
+
+/*
+ * generate code to add a and b and place the sum on the stack.
+ */
+static int
+add(int a, int b)
+{
+	lda(b);
+	pop(b);
+	tad(a);
+	pop(a);
+
+	return (push(RSTACK));
+}
+
+/*
+ * generate code to subtract b from a and place the difference on the
+ * stack.
+ */
+static int
+sub(int a, int b)
+{
+	lda(b);
+	pop(b);
+	cia();
+	tad(a);
+	pop(a);
+
+	return (push(RSTACK));
+}
+
+/*
+ * generate code to compare a and b with group 2 operation skip to
+ * implement comparison operator op.
+ *
+ * TODO: implement constant folding.
+ */
+static int
+cmp(int a, int b, const char *skip, const char *op)
+{
+	pop(sub(a, b));
+	emit("%s CLA", skip);
+	comment("AC %s 0 ? 1 : 0", op);
+	emit(" CLA IAC");
+	acundef();
+
+	return (push(RSTACK));
 }
 
 /*
