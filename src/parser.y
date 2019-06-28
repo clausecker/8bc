@@ -24,7 +24,7 @@ static int l2rval(int), r2lval(int);
  * ACDIRTY: AC needs to be written back (only if AC is not of disposition CONST)
  * ACUNDEF: AC holds an unknown value
  */
-enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 0, ACUNDEF = UNDEF | 1 };
+enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 1, ACUNDEF = UNDEF | 2 };
 static unsigned short ac, acstate;
 static void dca(int), lda(int), tad(int), and(int), jmp(int), cia(void), cma(void), sal(void);
 static void reify(void);
@@ -207,9 +207,8 @@ statement	: AUTO auto_list ';' statement
 			pop($2.value);
 		}
 		| RETURN expr ';' {
-			pop($2.value);
-			writeback();
 			lda($2.value);
+			pop($2.value);
 			dca(RVALUE | 00056);
 			jmp(RVALUE | 00057);
 		}
@@ -313,7 +312,13 @@ expr		: NAME {
 			lda(RVALUE | 0056);
 			$$.value = push(RVALUE);
 		}
-		| expr '[' expr ']'
+		| expr '[' expr ']' {
+			lda($3.value);
+			pop($3.value);
+			tad($1.value);
+			pop($1.value);
+			$$.value = r2lval(push(RSTACK));
+		}
 		| INC expr
 		| DEC expr
 		| '+' expr %prec INC {
@@ -417,8 +422,6 @@ expr		: NAME {
 		;
 
 %%
-
-static int l2rval(int), r2lval(int);
 
 /*
  * Convert an lvalue to an rvalue.  This obtains the address of the
