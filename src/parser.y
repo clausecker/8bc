@@ -191,7 +191,13 @@ param		: NAME {
 
 statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
-		| NAME ':' statement
+		| NAME ':' statement {
+			int i;
+
+			i = declare(&$1);
+			label(decls + i);
+			$$ = decls[i];
+		}
 		| CASE CONSTANT ':' statement
 		| DEFAULT ':' statement
 		| '[' statement_list ']'
@@ -210,14 +216,14 @@ statement	: AUTO auto_list ';' statement
 			lda($2.value);
 			pop($2.value);
 			dca(RVALUE | 00056);
-			jmp(RVALUE | 00057);
+			jmp(LVALUE | 00057);
 		}
 		| RETURN ';' {
 			writeback();
-			jmp(RVALUE | 00057);
+			jmp(LVALUE | 00057);
 		}
 		| BREAK ';'
-		| expr ';'
+		| expr ';' { pop($1.value); }
 		| ';'
 		;
 
@@ -279,16 +285,11 @@ argument_list	: expr {
 expr		: NAME {
 			int i;
 
+			i = declare(&$1);
+			if (decls[i].value == UNDEF)
+				decls[i].value = LUNDECL | labelno++;
 
-			for (i = ndecls - 1; i >= 0; i--)
-				if (memcmp(decls[i].name, $1.name, MAXNAME) == 0)
-					goto found;
-
-			/* not found */
-			fprintf(stderr, NAMEFMT ": undeclared\n", $1.name);
-			exit(EXIT_FAILURE);
-
-		found:	$$ = decls[i];
+			$$ = decls[i];
 		}
 		| CONSTANT
 		| '(' expr ')' {
