@@ -367,7 +367,7 @@ expr		: NAME {
 			pop($1.value);
 			emit("RCF");
 			lda(RVALUE | 0056);
-			$$.value = push(RVALUE);
+			$$.value = push(RSTACK);
 		}
 		| expr '[' expr ']' {
 			lda($3.value);
@@ -376,8 +376,18 @@ expr		: NAME {
 			pop($1.value);
 			$$.value = r2lval(push(RSTACK));
 		}
-		| INC expr
-		| DEC expr
+		| INC expr {
+			lda($2.value);
+			tad(CONST | 1);
+			dca($2.value);
+			$$ = $2;
+		}
+		| DEC expr {
+			lda(CONST | 07777);
+			tad($2.value);
+			dca($2.value);
+			$$ = $2;
+		}
 		| '+' expr %prec INC {
 			$$.value = $2.value;
 		}
@@ -395,8 +405,31 @@ expr		: NAME {
 			cma();
 			$$.value = push(RSTACK);
 		}
-		| expr INC
-		| expr DEC
+		| expr INC {
+			if (dsp($1.value) == CONST)
+				$$ = $1;
+			else {
+				writeback();
+				lda($1.value);
+				pop($1.value);
+				$$.value = push(RSTACK);
+				emit("ISZ %s", lit(spill($1.value)));
+				emit(" NOP");
+			}
+		}
+		| expr DEC {
+			if (dsp($1.value) == CONST)
+				$$ = $1;
+			else {
+				lda(CONST | 07777);
+				tad($1.value);
+				dca($1.value);
+				lda(CONST | 00001);
+				tad($1.value);
+				pop($1.value);
+				$$.value = push(RSTACK);
+			}
+		}
 		| expr '*' expr
 		| expr '%' expr
 		| expr '/' expr
