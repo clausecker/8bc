@@ -26,8 +26,9 @@ static int l2rval(int), r2lval(int);
  */
 enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 1, ACUNDEF = UNDEF | 2 };
 static unsigned short ac, acstate;
-static void dca(int), lda(int), tad(int), and(int), jmp(int), cia(void), cma(void), sal(void);
-static void reify(void);
+static void dca(int), lda(int), tad(int), and(int), cjmp(const char *, int), jmp(int);
+static void cia(void), cma(void), sal(void);
+static void reify(void), acundef(void);
 static int dirty(int), writeback(void);
 
 /* call frame management */
@@ -47,7 +48,7 @@ static int push(int);
 /* formatted assembly code output */
 /* the tab stop in the output where we last wrote something */
 enum { FLABEL, FINSTR, FOPERAND, FCOMMENT, FEOL };
-static int field = -1;
+static signed char field = -1;
 static void advance(int);
 static void label(struct expr *);
 static void emit(const char *, ...);
@@ -200,14 +201,23 @@ statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
 		| label ':' statement
 		| '[' statement_list ']'
-		| IF '(' expr ')' statement %prec ELSE
-		| IF '(' expr ')' statement ELSE statement
+		| if_clause statement %prec ELSE {
+			acundef();
+			label(&$1);
+		}
+		| if_clause statement ELSE {
+			strncpy($$.name, "(else)", MAXNAME);
+			$$.value = labelno++ | LUNDECL;
+			jmp($$.value);
+			acundef();
+			label(&$1);
+		} statement {
+			acundef();
+			label(&$4);
+		}
 		| WHILE '(' expr ')' statement
 		| SWITCH '(' expr ')' statement		/* not original */
 		| GOTO expr ';' {
-			writeback();
-			ac = CONST | 0;
-			reify();
 			jmp($2.value);
 			pop($2.value);
 		}
@@ -240,9 +250,24 @@ label		: NAME {
 			i = declare(&$1);
 			label(decls + i);
 			$$ = decls[i];
+			acundef();
 		}
 		| CASE CONSTANT
 		| DEFAULT
+		;
+
+if_clause	: IF '(' expr ')' {
+			strncpy($$.name, "(if)", MAXNAME);
+			$$.value = labelno++ | LUNDECL;
+			if (dsp($3.value) == CONST) {
+				if ($3.value == (CONST | 0))
+					jmp($$.value);
+			} else {
+				lda($3.value);
+				pop($3.value);
+				cjmp("SNA", $$.value);
+			}
+		}
 		;
 
 statement_list	: /* empty */
@@ -551,6 +576,10 @@ tad(int b)
 		return;
 	}
 
+	/* no pointless additions */
+	if (b == (CONST | 0))
+		return;
+
 	/* on writeback, reload */
 	if (writeback()) {
 		/* adding the constant first generates better code */
@@ -564,7 +593,11 @@ tad(int b)
 	}
 
 	reify();
-	emit("TAD %s", lit(spill(b)));
+
+	if (b == (CONST | 1))
+		emit("IAC");
+	else
+		emit("TAD %s", lit(spill(b)));
 
 	acstate = ACUNDEF;
 	ac = UNDEF; /* caller must fix this */
@@ -604,7 +637,19 @@ and(int b)
 }
 
 /*
- * jump to the address of the argument. If the argument is in AC, also write
+ * Perform a conditional jump to the argument.
+ */
+static void
+cjmp(const char *cond, int addr)
+{
+	writeback();
+
+	emit("%s", cond);
+	emit(" JMP %s", lit(spill(addr)));
+}
+
+/*
+ * jump to the argument. If the argument is in AC, also write
  * back AC first.
  *
  * TODO: make sure we can only jump to lvalues.
@@ -704,6 +749,16 @@ dirty(int value)
 		return (0);
 	else
 		return (val(value) == val(ac));
+}
+
+/*
+ * Mark the accumulator as having an undefined value.
+ */
+static void
+acundef(void)
+{
+	ac = UNDEF | 0; /* dummy value */
+	acstate = ACUNDEF;
 }
 
 /*
