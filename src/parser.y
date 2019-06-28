@@ -131,9 +131,16 @@ definition	: define_name { comment(NAMEFMT, $1.name); } initializer ';'	/* simpl
 			}
 		}
 		| define_name { newframe($1.name); } '(' parameters ')' statement {
+			int i;
+
 			/* function definition */
 			reify(); /* DEBUG */
 			emitvars();
+
+			/* find undeclared variables */
+			for (i = 0; i < ndecls; i++)
+				if (dsp(decls[i].value) == LUNDECL)
+					fprintf(stderr, NAMEFMT ": undeclared\n", decls[i].name);
 		}
 		;
 
@@ -1217,12 +1224,19 @@ blank(void)
 extern int
 main(int argc, char *argv[])
 {
+	int i;
+
 	(void)argc;
 	(void)argv;
 
 	yyparse();
 	advance(FINSTR);
 	printf("$\n");
+
+	/* check for undefined identifiers */
+	for (i = 0; i < ndefns; i++)
+		if (dsp(defns[i].value) == LUNDECL)
+			fprintf(stderr, NAMEFMT ": undefined\n", defns[i].name);
 
 	return (EXIT_SUCCESS);
 }
