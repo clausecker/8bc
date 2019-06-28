@@ -5,6 +5,9 @@
 #include "name.h"
 #include "y.tab.h"
 
+/* silence warning about unused yyunput() */
+#define YY_NO_UNPUT YY_NO_UNPUT
+
 extern int yyerror(const char *);
 static int nconst(void), cconst(void);
 static int unescape(const char **);
@@ -14,6 +17,11 @@ static int unescape(const char **);
 ESC	\*[0et*'"n]
 
 %%
+
+%{
+	/* silence warning about unused input() */
+	(void)input;
+%}
 
 "/*"			BEGIN COMMENT;
 <COMMENT>"*/"		BEGIN INITIAL;
