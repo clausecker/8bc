@@ -28,7 +28,7 @@ enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 1, ACUNDEF = UNDEF | 2 };
 static unsigned short ac, acstate;
 static void dca(int), lda(int), tad(int), and(int), cjmp(const char *, int), jmp(int);
 static void cia(void), cma(void), sal(void);
-static void reify(void), acundef(void);
+static void reify(void), acundef(void), acclear(void);
 static int dirty(int), writeback(void);
 
 /* call frame management */
@@ -50,6 +50,7 @@ static int push(int);
 enum { FLABEL, FINSTR, FOPERAND, FCOMMENT, FEOL };
 static signed char field = -1;
 static void advance(int);
+static void newlabel(struct expr *, const char *);
 static void label(struct expr *);
 static void emit(const char *, ...);
 static const char *lit(int);
@@ -202,17 +203,18 @@ statement	: AUTO auto_list ';' statement
 		| label ':' statement
 		| '[' statement_list ']'
 		| if_clause statement %prec ELSE {
-			acundef();
+			if (acstate != (CONST | 0))
+				acundef();
 			label(&$1);
 		}
 		| if_clause statement ELSE {
-			strncpy($$.name, "(else)", MAXNAME);
-			$$.value = labelno++ | LUNDECL;
+			newlabel(&$$, "(else)");
 			jmp($$.value);
-			acundef();
+			acclear();
 			label(&$1);
 		} statement {
-			acundef();
+			if (acstate != (CONST | 0))
+				acundef();
 			label(&$4);
 		}
 		| WHILE '(' expr ')' statement
@@ -257,15 +259,17 @@ label		: NAME {
 		;
 
 if_clause	: IF '(' expr ')' {
-			strncpy($$.name, "(if)", MAXNAME);
-			$$.value = labelno++ | LUNDECL;
+			newlabel(&$$, "(if)");
 			if (dsp($3.value) == CONST) {
+				lda(CONST | 0);
+				reify();
 				if ($3.value == (CONST | 0))
 					jmp($$.value);
 			} else {
 				lda($3.value);
 				pop($3.value);
-				cjmp("SNA", $$.value);
+				cjmp("SNA CLA", $$.value);
+				acclear();
 			}
 		}
 		;
@@ -330,7 +334,7 @@ expr		: NAME {
 
 			i = declare(&$1);
 			if (decls[i].value == UNDEF)
-				decls[i].value = LUNDECL | labelno++;
+				newlabel(decls + i, NULL);
 
 			$$ = decls[i];
 		}
@@ -343,7 +347,8 @@ expr		: NAME {
 				fprintf(stderr, "too many arguments to function call\n");
 
 			if (savelabel.value == UNDEF)
-				savelabel.value = labelno++ | LUNDECL;
+				newlabel(&savelabel, NULL);
+
 			writeback();
 			emit("CAL");
 			emit("%04o", tos + 1);
@@ -542,7 +547,7 @@ dca(int value)
 {
 	reify();
 	emit("DCA %s", lit(spill(value)));
-	acstate = ac = CONST | 0;
+	acclear();
 }
 
 /*
@@ -731,8 +736,7 @@ writeback(void)
 {
 	if (dsp(ac) != CONST && acstate == ACDIRTY) {
 		emit("DCA %s", lit(ac));
-		ac = CONST | 0;
-		acstate = ACCLEAR;
+		acclear();
 		return (1);
 	} else
 		return (0);
@@ -759,6 +763,15 @@ acundef(void)
 {
 	ac = UNDEF | 0; /* dummy value */
 	acstate = ACUNDEF;
+}
+
+/*
+ * Mark the accumulator as being clear.
+ */
+static void
+acclear(void)
+{
+	acstate = ac = CONST | 0;
 }
 
 /*
@@ -903,9 +916,9 @@ newframe(const char *name)
 	ndecls = 0;
 	narg = 0;
 
-	stacklabel.value = labelno++ | LUNDECL;
-	framelabel.value = labelno++ | LUNDECL;
-	varlabel.value = labelno++ | LUNDECL;
+	newlabel(&stacklabel, NULL);
+	newlabel(&framelabel, NULL);
+	newlabel(&varlabel, NULL);
 	savelabel.value = UNDEF;
 
 	infunc = 1;
@@ -1165,6 +1178,18 @@ label(struct expr *expr)
 	printf("L%04o,", no);
 
 	expr->value = no | RLABEL | type;
+}
+
+/*
+ * generate a new label number and write it to expr.  If name is not a
+ * null pointer, set expr->name to name.
+ */
+static void
+newlabel(struct expr *expr, const char *name)
+{
+	expr->value = labelno++ | LUNDECL;
+	if (name != NULL)
+		strncpy(expr->name, name, MAXNAME);
 }
 
 /*
