@@ -454,8 +454,40 @@ expr		: NAME {
 		| expr '>' expr
 		| expr LE expr
 		| expr GE expr
-		| expr EQ expr
-		| expr NE expr
+		| expr EQ expr {
+			lda($3.value);
+			pop($3.value);
+			cia();
+			tad($1.value);
+			pop($1.value);
+			if (dsp(ac) == CONST)
+				ac = ac == 0 | CONST;
+			else {
+				emit("SNA CLA");
+				comment("AC == 0 ? 1 : 0");
+				emit(" CLA IAC");
+				acundef();
+			}
+
+			$$.value = push(RSTACK);
+		}
+		| expr NE expr {
+			lda($3.value);
+			pop($3.value);
+			cia();
+			tad($1.value);
+			pop($1.value);
+			if (dsp(ac) == CONST)
+				ac = ac != 0 | CONST;
+			else {
+				emit("SZA CLA");
+				comment("AC != 0 ? 1 : 0");
+				emit(" CLA IAC");
+				acundef();
+			}
+
+			$$.value = push(RSTACK);
+		}
 		| expr '&' expr {
 			lda($3.value);
 			pop($3.value);
