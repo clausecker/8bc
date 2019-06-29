@@ -27,7 +27,7 @@ static int l2rval(int), r2lval(int);
 enum { ACCLEAR = CONST | 0, ACDIRTY = UNDEF | 1, ACUNDEF = UNDEF | 2 };
 static unsigned short ac, acstate;
 static void dca(int), lda(int), tad(int), and(int), cjmp(const char *, int), jmp(int);
-static void cia(void), cma(void), sal(void);
+static void cia(void), cma(void), sal(void), sar(void);
 static void reify(void), acundef(void), acclear(void);
 static int dirty(int), writeback(void);
 
@@ -425,8 +425,63 @@ expr		: NAME {
 		| expr '/' expr
 		| expr '+' expr { $$.value = add($1.value, $3.value); }
 		| expr '-' expr { $$.value = sub($1.value, $3.value); }
-		| expr SHL expr
-		| expr SHR expr
+		| expr SHL expr {
+			struct expr l1, l2;
+			int tmp;
+
+			newlabel(&l1, "(<<L1)");
+			newlabel(&l2, "(<<L2)");
+
+			/* TODO: add code for const $3 */
+			/*
+			 * the loop goes like this:
+			 *
+			 * counter = -$3 - 1;
+			 * while (++counter)
+			 *     $1 <<= 1;
+			 */
+			lda($3.value);
+			pop($3.value);
+			cma();
+			reify(); /* avoid having a constant */
+			tmp = push(RSTACK);
+			lda($1.value);
+			reify();
+			jmp(l2.value);
+			label(&l1);
+			sal();
+			label(&l2);
+			emit("ISZ %s", lit(spill(tmp)));
+			emit(" JMP %s", lit(spill(l1.value)));
+			pop(tmp);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}
+		| expr SHR expr {
+			/* same as the SHL code */
+			struct expr l1, l2;
+			int tmp;
+
+			newlabel(&l1, "(>>L1)");
+			newlabel(&l2, "(>>L2)");
+
+			lda($3.value);
+			pop($3.value);
+			cma();
+			reify(); /* avoid having a constant */
+			tmp = push(RSTACK);
+			lda($1.value);
+			reify();
+			jmp(l2.value);
+			label(&l1);
+			sar();
+			label(&l2);
+			emit("ISZ %s", lit(spill(tmp)));
+			emit(" JMP %s", lit(spill(l1.value)));
+			pop(tmp);
+			pop($1.value);
+			$$.value = push(RSTACK);
+		}
 		| expr '<' expr { $$.value = cmp($1.value, $3.value, "SZL", "<"); }
 		| expr '>' expr { $$.value = cmp($1.value, $3.value, "SZA SNL", ">"); }
 		| expr LE expr  { $$.value = cmp($1.value, $3.value, "SZL SNA", "<="); }
@@ -738,6 +793,24 @@ sal(void)
 
 	reify();
 	emit("CLL RAL");
+	acundef();
+}
+
+/*
+ * shift A right.
+ */
+static void
+sar(void)
+{
+	int a = ac;
+
+	if (dsp(a) == CONST) {
+		ac = val(a >> 1) | CONST;
+		return;
+	}
+
+	reify();
+	emit("CLL RAR");
 	acundef();
 }
 

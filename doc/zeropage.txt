@@ -50,20 +50,6 @@ registers saved by CAL.
 
 #arithmetic
 
-SHL (JMS I 0040)  shift left
-(addr)
-
-AC = *addr << AC
-continue after addr
-
-
-SHR (JMS I 0041)  shift right
-(addr)
-
-AC = *addr1 >> AC
-continue after addr
-
-
 MUL (JMS I 0042)  multiply (unsigned)
 (addr)
 
@@ -82,18 +68,4 @@ MOD (JMS I 0044)  modulo (unsigned)
 (addr)
 
 AC = *addr % AC
-continue after addr
-
-
-IOR (JMS I 0045)  inclusive or
-(addr)
-
-AC = *addr | AC
-continue after addr
-
-
-EOR (JMS I 0046)  exclusive or
-(addr)
-
-AC = *addr ^ AC
 continue after addr
