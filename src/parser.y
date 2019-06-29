@@ -51,7 +51,7 @@ static int push(int);
 /* formatted assembly code output */
 /* the tab stop in the output where we last wrote something */
 enum { FLABEL, FINSTR, FOPERAND, FCOMMENT, FEOL };
-static signed char field = -1;
+static signed char field = -1, dead = 0;
 static void advance(int);
 static void newlabel(struct expr *, const char *);
 static void label(struct expr *);
@@ -684,6 +684,7 @@ jmp(int addr)
 		fprintf(stderr, "lvalue expected\n"); */
 
 	emit("JMP %s", lit(spill(addr)));
+	dead = 1; /* poor man's dead code elimination */
 }
 
 /*
@@ -1036,6 +1037,7 @@ emitvars(void)
 
 	infunc = 0;
 
+	dead = 0;
 	blank();
 
 	/* beginning of stack */
@@ -1229,6 +1231,8 @@ label(struct expr *expr)
 {
 	int no, type = expr->value & LMASK;
 
+	dead = 0; /* could jump here */
+
 	switch (expr->value & DSPMASK) {
 	case LLABEL:
 	case RLABEL:
@@ -1275,6 +1279,9 @@ static void
 emit(const char *fmt, ...)
 {
 	int n;
+
+	if (dead)
+		return;
 
 	va_list ap;
 
@@ -1362,6 +1369,9 @@ comment(const char *fmt, ...)
 {
 	va_list ap;
 
+	if (dead)
+		return;
+
 	advance(FCOMMENT);
 
 	printf("/ ");
@@ -1376,6 +1386,9 @@ comment(const char *fmt, ...)
 static void
 blank(void)
 {
+	if (dead)
+		return;
+
 	if (field != -1) {
 		putchar('\n');
 		putchar('\n');
