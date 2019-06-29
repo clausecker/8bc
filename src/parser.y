@@ -1352,11 +1352,11 @@ static void
 emit(const char *fmt, ...)
 {
 	int n;
+	va_list ap;
 
 	if (dead)
 		return;
 
-	va_list ap;
 
 	advance(FINSTR);
 
