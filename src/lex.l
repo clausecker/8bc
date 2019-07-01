@@ -66,10 +66,14 @@ ESC	\*[0et*'"n]
 
 [0-9]+			yylval.value = nconst() | CONST;  return (CONSTANT);
 \'([^*'\n]|{ESC})\'	yylval.value = cconst() | CONST;  return (CONSTANT);
-\"([^*"\n]|{ESC})*\"	yyerror("string constants not implemented");
+\"([^*"\n]|{ESC})*\"	{
+				fprintf(stderr, "string constants not implemented\n");
+				yylval.value = CONST | 7777;
+				return (CONSTANT);
+			}
 
-\"			yyerror("unterminated string constant");
-'			yyerror("unterminated character constant");
+\"			fprintf(stderr, "unterminated string constant\n");
+'			fprintf(stderr, "unterminated character constant\n");
 
 [A-Za-z_][[:alnum:]_]*	{
 				size_t i;
@@ -88,7 +92,7 @@ ESC	\*[0et*'"n]
 [[:space:]]		/* ignore white space */
 
 [!-^]			return (yytext[0]);
-[`-~]			return (yytext[0] - 040);	/* convert to 6 bit ASCII */
+[`a-z{|}~]		return (yytext[0] - 040);	/* convert to 6 bit ASCII */
 
 .			fprintf(stderr, "stray %03o\n", (unsigned char)yytext[0]);
 
@@ -145,7 +149,7 @@ unescape(const char **s)
 	case '(': return ('{');
 	case ')': return ('}');
 	case 't': return ('\t');
-	case '\n': return ('\n');
+	case 'n': return ('\n');
 	default:
 		fprintf(stderr, "unrecognised escape sequence %c\n", c);
 
