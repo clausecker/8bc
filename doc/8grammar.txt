@@ -1,6 +1,5 @@
 // the grammar we use for 8bc
 
-
 8bc uses 6-bit ASCII for its character set:
 
 	  0 1 2 3 4 5 6 7    0 1 2 3 4 5 6 7
@@ -51,8 +50,11 @@ This is the grammar of B, given in YACC syntax:
 %token	SWITCH		/* the SWITCH keyword */
 %token	GOTO		/* the GOTO keyword */
 %token	RETURN		/* the RETURN keyword */
+%token	BREAK		/* the BREAK keyword */
+%token	DEFAULT		/* the DEFAULT keyword */
 
 %token	ASOR		/* the =\ mark */
+%token	ASXOR		/* the =^ mark */
 %token	ASAND		/* the =& mark */
 %token	ASEQ		/* the === mark */
 %token	ASNE		/* the =!= mark */
@@ -78,158 +80,176 @@ This is the grammar of B, given in YACC syntax:
 %token	SHL		/* the << mark */
 %token	SHR		/* the >> mark */
 
+%right ELSE
+%right '=' ASOR ASXOR ASAND ASEQ ASNE ASLT ASLE ASGT ASGE ASSHL ASSHR ASADD ASSUB ASMOD ASMUL ASDIV
+%right '?' ':'
+%left '\\'
+%left '^'
+%left '&'
+%nonassoc EQ NE
+%nonassoc '<' '>' LE GE
+%left SHL SHR
+%left '-'
+%left '+'
+%left '%' '*' '/'
+%right INC DEC '[' '(' '!'
+
 %start	program
 
 %%
 
-program	: /* empty */
-	| program definition
-	;
+program		: /* empty */
+		| program definition
+		;
 
-definition
-	: NAME initializer ';'				/* simple definition */
-	| NAME '[' vector-length ']' initializer ';'	/* vector definition */
-	| NAME '( parameters ')' statement		/* function definition */
-	;
+definition	: NAME initializer ';' /* simple definition */
+		| NAME '[' vector_length ']' initializer ';' /* vector definition */
+		| NAME '(' parameters ')' statement /* function definition */
+		;
 
-initializer
-	: /* empty */
-	| ival ival-list
-	;
+initializer	: /* empty */
+		| ival_list
+		;
 
-ival-list
-	: /* empty */
-	| ival-list ',' ival
-	;
+ival_list	: ival
+		| ival_list ',' ival
+		;
 
-ival	: CONSTANT
-	| NAME
-	;
+ival		: CONSTANT
+		| NAME
+		;
 
-vector-length
-	: /* empty */
-	| CONSTANT
-	;
+vector_length	: /* empty */
+		| CONSTANT
+		;
 
-parameters
-	: /* empty */
-	| name-list
-	;
+parameters	: /* empty */
+		| param_list
+		;
 
-name-list
-	: NAME
-	| name-list ',' NAME
-	;
+param_list	: param
+		| param_list ',' param
+		;
 
-statement
-	: AUTO name-const-list ';' statement
-	| EXTRN name-list ';' statement
-	| NAME ':' statement
-	| CASE CONSTANT ':' statement
-	| '[' statement-list ']'
-	| IF '(' rvalue ')' statement else-clause
-	| WHILE '(' rvalue ')' statement
-	| SWITCH '(' rvalue ')' statement		/* not original */
-	| GOTO rvalue ';'
-	| RETURN return-value ';'
-	| rvalue ';'
-	| ';'
+param		: NAME
+		;
 
-name-const-list
-	: NAME constant-opt
-	| name-const-list ',' NAME constant-opt
-	;
+statement	: AUTO auto_list ';' statement
+		| EXTRN extrn_list ';' statement
+		| label ':' statement
+		| '[' statement_list ']'
+		| IF '(' expr ')' statement %prec ELSE
+		| IF '(' expr ')' statement ELSE statement
+		| WHILE '(' expr ')' statement
+		| SWITCH '(' expr ')' statement		/* not original */
+		| GOTO expr ';'
+		| RETURN expr ';'
+		| RETURN ';'
+		| BREAK ';'
+		| expr ';'
+		| ';'
+		;
 
-constant-opt
-	: /* empty */
-	| CONSTANT
-	;
+label		: NAME
+		| CASE CONSTANT
+		| DEFAULT
+		;
 
-else-clause
-	: /* empty */
-	| ELSE statement
-	;
+statement_list	: /* empty */
+		| statement_list statement
+		;
 
-rvalue	: '(' rvalue ')'
-	| lvalue
-	| CONSTANT
-	| lvalue assign rvalue
-	| inc-dec lvalue
-	| lvalue inc-dec
-	| unary rvalue
-	| '&' lvalue
-	| rvalue binary rvalue
-	| rvalue '?' rvalue ':' rvalue
-	| rvalue '(' arguments ')'
+auto_list	: name_const
+		| auto_list ',' name_const
+		;
 
-arguments
-	: /* empty */
-	| argument-list
-	;
+name_const	: NAME constant_opt
+		;
 
-argument-list
-	: rvalue
-	| argument-list ',' rvalue
-	;
+extrn_list	: extrn_decl
+		| extrn_list ',' extrn_decl
+		;
 
-assign	: '='
-	| ASOR
-	| ASAND
-	| ASEQ
-	| ASNE
-	| ASLT
-	| ASLE
-	| ASGT
-	| ASGE
-	| ASSHL
-	| ASSHR
-	| ASADD
-	| ASSUB
-	| ASMOD
-	| ASMUL
-	| ASDIV
-	;
+extrn_decl	: NAME
+		;
 
-inc-dec	: INC
-	| DEC
-	;
+constant_opt	: /* empty */
+		| CONSTANT
+		;
 
-unary	: '-'
-	| '+'
-	;
+arguments	: /* empty */
+		| argument_list
+		;
 
-binary	: '\\'
-	| '&'
-	| EQ
-	| NE
-	| '<'
-	| LE
-	| '>'
-	| GE
-	| SHL
-	| SHR
-	| '+'
-	| '-'
-	| '%'
-	| '*'
-	| '/'
-	;
+argument_list	: expr
+		| argument_list ',' expr
+		;
 
-lvalue	: NAME
-	| '*' rvalue
-	| rvalue '[' rvalue ']'
-	;
+expr		: NAME
+		| CONSTANT
+		| '(' expr ')'
+		| expr '(' arguments ')'
+		| expr '[' expr ']'
+		| expr INC
+		| expr DEC
+		| INC expr
+		| DEC expr
+		| '+' expr %prec INC
+		| '-' expr %prec INC
+		| '*' expr %prec INC
+		| '&' expr %prec INC
+		| '^' expr %prec INC
+		| '!' expr
+		| expr '*' expr
+		| expr '%' expr
+		| expr '/' expr
+		| expr '+' expr
+		| expr '-' expr
+		| expr SHL expr
+		| expr SHR expr
+		| expr '<' expr
+		| expr '>' expr
+		| expr LE expr
+		| expr GE expr
+		| expr EQ expr
+		| expr NE expr
+		| expr '&' expr
+		| expr '^' expr
+		| expr '\\' expr
+		| expr '?' expr ':' expr
+		| expr '=' expr
+		| expr ASMUL expr
+		| expr ASMOD expr
+		| expr ASDIV expr
+		| expr ASADD expr
+		| expr ASSUB expr
+		| expr ASSHL expr
+		| expr ASSHR expr
+		| expr ASLT expr
+		| expr ASGT expr
+		| expr ASLE expr
+		| expr ASGE expr
+		| expr ASEQ expr
+		| expr ASNE expr
+		| expr ASAND expr
+		| expr ASXOR expr
+		| expr ASOR expr
+		;
+
+%%
 
 The precedence and associativity of the binary operators  are as
 follows with operators of the highest precedence first:
 
-OPERATORS	ASSOCIATIVITY
-% * /		left to right
-+ -		left to right
-<< >>		left to right
-< >= > >=	???
-== !=		???
-&		left to right
-\		left to right
-?:		right to left
-=...		right to left
+OPERATORS		ASSOCIATIVITY	CLASS
+* & + - ^ ! ++ -- () []	right to left	unary operators
+% * /			left to right	multiplicative operators
++ -			left to right	additive operators
+<< >>			left to right	shift operators
+< >= > >=		none		relational operators
+== !=			none		equality operators
+&			left to right	the and operator
+^			left to right	the exclusive or operator
+\			left to right	the inclusive or operator
+?:			right to left	the conditional operator
+= =...			right to left	assignment operators
