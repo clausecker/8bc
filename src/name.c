@@ -43,7 +43,7 @@ found:	return (i);
 
 /*
  * Add the name referred to by expr to the definition table.  If it does
- * not exist, allocate a new label for it and set it to UNDEFN.  Always
+ * not exist, allocate a new label for it and set it to LUNDECL.  Always
  * copy the content of the defn table to expr.
  */
 extern int

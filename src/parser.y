@@ -6,6 +6,8 @@
 
 #include "name.h"
 
+#define YYERROR_VERBOSE
+
 extern int yyerror(const char *);
 extern int yylex(void);
 
@@ -313,6 +315,12 @@ extrn_decl	: NAME {
 			int i;
 
 			define(&$1);
+			/*
+			 * the external symbol might be undefined, but we just declared it,
+			 * so mark it as declared in decls, silencing any possible warning.
+			 */
+			if (dsp($1.value) == LUNDECL)
+				$1.value = LLABEL | val($1.value);
 			i = declare(&$1);
 			if ($1.value != decls[i].value)
 				fprintf(stderr, NAMEFMT ": incompatible redeclaration\n", $1.name);
