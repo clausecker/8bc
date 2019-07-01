@@ -116,7 +116,7 @@ static void blank(void);
 %left '-'
 %left '+'
 %left '%' '*' '/'
-%right INC DEC '[' '('
+%right INC DEC '[' '(' '!'
 
 %start	program
 
@@ -402,6 +402,17 @@ expr		: NAME {
 			pop($2.value);
 			cma();
 			$$.value = push(RSTACK);
+		}
+		| '!' expr {
+			if (dsp($2.value) == CONST)
+				$$.value = !val($2.value);
+			else {
+				lda($2.value);
+				writeback();
+				emit("SNA CLA");
+				comment("!AC");
+				emit(" IAC");
+			}
 		}
 		| expr INC {
 			if (dsp($1.value) == CONST)
