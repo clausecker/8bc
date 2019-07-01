@@ -407,8 +407,8 @@ expr		: NAME {
 			if (dsp($2.value) == CONST)
 				$$.value = !val($2.value);
 			else {
-				lda($2.value);
 				writeback();
+				lda($2.value);
 				emit("SNA CLA");
 				comment("!AC");
 				emit(" IAC");
@@ -439,9 +439,9 @@ expr		: NAME {
 				$$.value = push(RSTACK);
 			}
 		}
-		| expr '*' expr
-		| expr '%' expr
-		| expr '/' expr
+		| expr '*' expr /* TODO */
+		| expr '%' expr /* TODO */
+		| expr '/' expr /* TODO */
 		| expr '+' expr { $$.value = add($1.value, $3.value); }
 		| expr '-' expr { $$.value = sub($1.value, $3.value); }
 		| expr SHL expr {
@@ -537,7 +537,35 @@ expr		: NAME {
 			tad($1.value);
 			$$.value = push(RSTACK);
 		}
-		| expr '?' expr ':' expr
+		| expr '?' expr ':' expr {
+			if (dsp($1.value) == CONST) {
+				if (val($1.value)) {
+					pop($5.value);
+					$$ = $3;
+				} else {
+					lda($5.value);
+					pop($5.value);
+					pop($3.value);
+					$$.value = push(RSTACK);
+				}
+			} else {
+				writeback();
+				lda(CONST | 07777);
+				tad($1.value);
+				/* now L = $1 != 0 */
+				/* taken if $1 == 0 */
+				emit("SNL CLA");
+				comment("!L ? ... : ...");
+				/* if taken, L will be clear */
+				emit(" TAD %s", lit(spill($5.value)));
+				/* taken if $1 != 0 (and L thus set) */
+				emit("SZL");
+				emit(" TAD %s", lit(spill($3.value)));
+				pop($5.value);
+				pop($3.value);
+				$$.value = push(RSTACK);
+			}
+		}
 		| expr '=' expr {
 			lda($3.value);
 			pop($3.value);
@@ -653,9 +681,13 @@ lda(int value)
 		return;
 
 	writeback();
-	ac = CONST | 0;
-	tad(value);
-	ac = value;
+	if (dsp(value) == CONST)
+		ac = value;
+	else {
+		ac = CONST | 0;
+		tad(value);
+		ac = value;
+	}
 }
 
 /*
