@@ -50,6 +50,15 @@ enum {
 #define class(x) ((x) & CMASK)
 #define isconst(x) (class(x) == RCONST)
 #define islabel(x) (((x) & 0060000) == RLABEL)
+#define onstack(x) (((x) & CMASK & ~LMASK) == RSTACK)
+
+/*
+ * the storage class RINVAL is used to mark various non-expressions
+ * to aid in debugging.  These are listed here.
+ */
+enum {
+	TOKEN = RINVAL | 0000001, /* token returned by yylex */
+};
 
 /*
  * There are two name tables in this compiler.  The defns table
