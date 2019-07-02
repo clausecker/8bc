@@ -2,14 +2,19 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
+#include "asm.h"
+#include "error.h"
 #include "param.h"
 #include "pdp8.h"
-#include "error.h"
 
 /* definition and declaration tables */
 static struct expr defns[DEFNSIZ], decls[DECLSIZ];
 static unsigned short ndecl = 0, ndefn = 0;
+
+/* the next label number to use */
+static short labelno = 0;
 
 extern struct expr *
 define(const char name[MAXNAME])
@@ -69,4 +74,47 @@ endscope(int scope)
 
 
 	ndecl = scope;
+}
+
+extern void
+newlabel(struct expr *e)
+{
+	e->value = LLABEL | labelno++;
+	if (labelno > 07777)
+		fatal(e->name, "too many labels");
+}
+
+/*
+ * Place a label.  If the label was already placed, emit an error and
+ * do not place the label again.  If the label is not actually a label,
+ * fail compilation.  Suffix the label with suffix.  Then change the
+ * storage class of e from RUND to RLABEL resp LUND to LLABEL to avoid
+ * the label being placed again.
+ */
+static void
+placelabel(struct expr *e, int suffix)
+{
+	if (rclass(e->value) == RLABEL) {
+		error(e->name, "will not place label again");
+		return;
+	}
+
+	if (rclass(e->value) != RUND)
+		fatal(e->name, "not a label");
+
+	label("L%04o%c", val(e->value), suffix);
+	e->value = e->value & (~CMASK | LMASK) | RLABEL;
+}
+
+extern void
+putlabel(struct expr *e)
+{
+	/* TODO: reify() needed? */
+	placelabel(e, ',');
+}
+
+extern void
+setlabel(struct expr *e)
+{
+	placelabel(e, '=');
 }
