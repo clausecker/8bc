@@ -17,3 +17,8 @@ extern short errcnt;
 extern void warn(const char *name, const char *fmt, ...);
 extern void error(const char *name, const char *fmt, ...);
 extern void fatal(const char *name, const char *fmt, ...);
+
+/*
+ * compatibility function to generate lexer and parser errors.
+ */
+extern void yyerror(const char *);

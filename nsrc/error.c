@@ -54,3 +54,9 @@ fatal(const char *name, const char *fmt, ...)
 
 	exit(EXIT_FAILURE);
 }
+
+extern void
+yyerror(const char *msg)
+{
+	error(NULL, "%s", msg);
+}
