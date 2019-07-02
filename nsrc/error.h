@@ -2,7 +2,8 @@
  * Error messages are printed with the error function.  If instead the
  * fatal function is called, the program is terminated immediately.
  * Emitting any error increases the errcnt.  If more than MAXERROR
- * errors are emitted, the program is terminated as with fatal.  Error
+ * errors are emitted, the program is terminated as with fatal.  The
+ * warn function behaves like error but does not change errcnt.  Error
  * messages have the form
  *
  *     ##### XXXXXXXX ...
@@ -13,5 +14,6 @@
  * message.
  */
 extern short errcnt;
+extern void warn(const char *name, const char *fmt, ...);
 extern void error(const char *name, const char *fmt, ...);
 extern void fatal(const char *name, const char *fmt, ...);

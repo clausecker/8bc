@@ -21,6 +21,16 @@ verror(const char *name, const char *fmt, va_list ap)
 }
 
 extern void
+warn(const char *name, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	verror(name, fmt, ap);
+	va_end(ap);
+}
+
+extern void
 error(const char *name, const char *fmt, ...)
 {
 	va_list ap;
