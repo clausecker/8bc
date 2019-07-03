@@ -8,6 +8,7 @@
 #include "error.h"
 #include "param.h"
 #include "pdp8.h"
+#include "name.h"
 
 /* definition and declaration tables */
 static struct expr defns[DEFNSIZ], decls[DECLSIZ];
