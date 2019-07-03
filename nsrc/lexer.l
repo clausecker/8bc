@@ -12,6 +12,9 @@
 
 static int nconst(void), cconst(void);
 static int unescape(const char **);
+
+/* the current line number */
+unsigned short lineno = 1;
 %}
 
 %x	COMMENT
@@ -29,8 +32,11 @@ ESC	\*[0et*'"n]
 
 "/*"			BEGIN COMMENT;
 <COMMENT>"*/"		BEGIN INITIAL;
-<COMMENT>.|\n		/* discard comments */
+<COMMENT>[^*\n]+	/* discard comments */
+<COMMENT>"*"		/* discard comments */
+<COMMENT>\n		|
 
+\n			lineno++;
 "=*"			return (ASMUL);
 =%			return (ASMOD);
 "=/"			return (ASDIV);

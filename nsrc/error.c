@@ -7,9 +7,8 @@
 #include "param.h"
 #include "pdp8.h"
 #include "error.h"
+#include "parser.h"
 
-/* TODO: pull lineno from the lexer */
-#define lineno 0
 short errcnt = 0;
 
 static void
