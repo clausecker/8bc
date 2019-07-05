@@ -4,8 +4,8 @@
 
 #include "pdp8.h"
 #include "error.h"
-#include "y.tab.h"
 #include "parser.h"
+#include "y.tab.h"
 
 /* silence warning about unused yyunput() */
 #define YY_NO_UNPUT YY_NO_UNPUT
