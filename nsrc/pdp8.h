@@ -51,6 +51,8 @@ enum {
 #define rclass(x) ((x) & CMASK & ~LMASK)
 #define isconst(x) (class(x) == RCONST)
 #define islabel(x) (((x) & 0060000) == RLABEL)
+#define islval(x) ((x) & LMASK)
+#define isrval(x) (!islval(x))
 #define onstack(x) (rclass(x) == RSTACK)
 
 /*
@@ -58,5 +60,116 @@ enum {
  * to aid in debugging.  These are listed here.
  */
 enum {
-	TOKEN = RINVAL | 0000001, /* token returned by yylex */
+	TOKEN   = RINVAL | 0000001, /* token returned by yylex */
+	EXPIRED = RINVAL | 0000002, /* expired stack register */
 };
+
+/*
+ * Emit the specified PDP-8 instruction.  The function argument is
+ * provided as an argument to the instruction with an appropriate
+ * addressing mode.  lda() is a convenience function that clears AC
+ * and then adds the desired value.
+ */
+extern void and(const struct expr *);
+extern void tad(const struct expr *);
+extern void isz(const struct expr *);
+extern void dca(const struct expr *);
+extern void jms(const struct expr *);
+extern void jmp(const struct expr *);
+
+extern void lda(const struct expr *);
+
+/*
+ * Emit the given microcoded PDP-8 instruction.  Use the provided
+ * macros to build microcoded instructions.  As with a real PDP-8,
+ * microinstructions may not be mixed across groups except for CLA.
+ * Group 3 instructions as well as OSR and HLT are not supported and
+ * must be manually emitted if needed.
+ */
+enum {
+	/* group 1 */
+	OPR1 =        07000,
+	CLA  = OPR1 | 00200, /* clear AC */
+	CLL  = OPR1 | 00100, /* clear L */
+	CMA  = OPR1 | 00040, /* complement AC */
+	CML  = OPR1 | 00020, /* complement L */
+	RAR  = OPR1 | 00010, /* rotate AC right */
+	RAL  = OPR1 | 00004, /* rotate AC left */
+	ROT2 = OPR1 | 00002, /* rotate twice */
+	IAC  = OPR1 | 00001, /* increment AC */
+
+	NOP  = OPR1,
+	RTR  = RAR  | ROT2,  /* rotate twice right */
+	RTL  = RAL  | ROT2,  /* rotate twice left */
+	STA  = CLA  | CMA,   /* set AC */
+	STL  = CLL  | CML,   /* set L */
+	CIA  = CMA  | IAC,   /* complement and increment AC (negate AC) */
+
+	/* group 2 */
+	OPR2 =        07400,
+	SMA  = OPR2 | 00100, /* skip on minus AC */
+	SZA  = OPR2 | 00040, /* skip on zero AC */
+	SNL  = OPR2 | 00020, /* skip on non-zero L */
+	SKP  = OPR2 | 00010, /* reverse skip condition */
+
+	SPA  = SKP  | SMA,   /* skip on positive AC */
+	SNA  = SKP  | SZA,   /* skip on non-zero AC */
+	SZL  = SKP  | SNL,   /* skip on zero L */
+};
+extern void opr(int);
+
+/*
+ * Emitting literal values.
+ *
+ * emitr(expr)
+ *     Emits the value of expr into the instruction stream.  expr must
+ *     be of type RCONST, RLABEL, or RUND.
+ *
+ * emitl(expr)
+ *     Emits the address of expr into the instruction stream.  expr can
+ *     be of type LCONST, RVALUE, LLABEL, LUND, RSTACK, RAUTO, or RARG.
+ */
+extern void emitr(const struct expr *);
+extern void emitl(const struct expr *);
+
+/*
+ * lvalues and rvalues.
+ *
+ * expr = r2lval(expr)
+ *     Interprete an rvalue as an lvalue, effectively dereferencing expr.
+ *     expr must have storage class RCONST, RVALUE, RLABEL, RUND, RSTACK
+ *     RAUTO, or RARG.
+ *
+ * expr = l2rval(expr)
+ *     Interprete an lvalue as an rvalue, effectively taking the address
+ *     of expr.  expr must have storage class LCONST, LVALUE, LLABEL,
+ *     LUND, LSTACK, LAUTO, or LARG.
+ */
+extern struct expr r2lval(const struct expr *);
+extern struct expr l2rval(const struct expr *);
+
+/*
+ * Call frame management.
+ *
+ * expr = push()
+ *     Allocate a scratch register and fill it with the current content
+ *     of AC.  The content of AC is undefined afterwards.
+ *
+ * pop(expr)
+ *     Deallocate scratch register expr.  Only the most recently
+ *     allocated scratch register can be deallocated.  expr is
+ *     overwritten with EXPIRED to prevent accidental reuse.  If expr
+ *     is not on the stack, this does nothing.
+ *
+ * newframe(expr)
+ *     Start a new call frame and emit a function prologue for a
+ *     function named expr.name.  This also generates an appropriate
+ *     label.
+ *
+ * endframe()
+ *     End the current call frame and emit the required data.
+ */
+extern struct expr *push(void);
+extern void pop(struct expr *);
+extern void newframe(struct expr *);
+extern void endframe(void);

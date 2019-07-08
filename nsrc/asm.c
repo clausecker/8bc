@@ -55,7 +55,7 @@ label(const char *fmt, ...)
 }
 
 extern void
-emit(const char *fmt, ...)
+instr(const char *fmt, ...)
 {
 	va_list ap;
 
