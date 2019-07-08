@@ -36,8 +36,8 @@ enum {
 	LAUTO  = 0150000, /* variable in automatic variable area */
 	RARG   = 0060000, /* pointer to argument */
 	LARG   = 0160000, /* argument */
-	RINVAL = 0070000, /* invalid storage class */
-	LINVAL = 0170000, /* invalid storage class */
+	SPECIAL= 0070000, /* special class */
+	INVALID= 0170000, /* invalid storage class */
 
 	CMASK  = 0170000, /* storage class mask */
 	LMASK  = 0100000, /* lvalue mask */
@@ -56,12 +56,14 @@ enum {
 #define onstack(x) (rclass(x) == RSTACK)
 
 /*
- * the storage class RINVAL is used to mark various non-expressions
- * to aid in debugging.  These are listed here.
+ * the storage class INVALID is used to mark various non-expressions.
+ * These are listed here.
  */
 enum {
-	TOKEN   = RINVAL | 0000001, /* token returned by yylex */
-	EXPIRED = RINVAL | 0000002, /* expired stack register */
+	TOKEN   = INVALID | 0000001, /* token returned by yylex */
+	EXPIRED = INVALID | 0000002, /* expired stack register */
+	NORVAL  = INVALID | 0000003, /* not an rvalue */
+	NOLVAL  = INVALID | 0000004, /* not an lvalue */
 };
 
 /*
@@ -138,12 +140,14 @@ extern void emitl(const struct expr *);
  * expr = r2lval(expr)
  *     Interprete an rvalue as an lvalue, effectively dereferencing expr.
  *     expr must have storage class RCONST, RVALUE, RLABEL, RUND, RSTACK
- *     RAUTO, or RARG.
+ *     RAUTO, or RARG.  If the class is invalid, the result's value is
+ *     NORVAL.
  *
  * expr = l2rval(expr)
  *     Interprete an lvalue as an rvalue, effectively taking the address
  *     of expr.  expr must have storage class LCONST, LVALUE, LLABEL,
- *     LUND, LSTACK, LAUTO, or LARG.
+ *     LUND, LSTACK, LAUTO, or LARG.  If the class is invalid, the
+ *     result's value is NOLVAL.
  */
 extern struct expr r2lval(const struct expr *);
 extern struct expr l2rval(const struct expr *);
