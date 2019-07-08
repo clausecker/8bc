@@ -1,4 +1,5 @@
 %{
+#include "param.h"
 #include "pdp8.h"
 #include "error.h"
 #include "parser.h"

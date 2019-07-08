@@ -7,8 +7,6 @@
  * A name is up to MAXNAME characters long.  NAMEFMT can be used to
  * print it.
  */
-enum { MAXNAME = 8 };
-#define NAMEFMT "%.8s"
 struct expr {
 	unsigned short value;
 	char name[MAXNAME];

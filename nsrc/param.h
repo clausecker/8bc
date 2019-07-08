@@ -32,4 +32,8 @@ enum {
 /* various parameters */
 enum {
 	MAXERRORS = 10,				/* number of errors before the compiler gives up */
+	MAXNAME = 8,				/* maximum name size */
 };
+
+/* format string to print a name, must be synchronised with MAXNAME */
+#define NAMEFMT "%.8s"
