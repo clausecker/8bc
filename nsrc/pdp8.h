@@ -95,15 +95,16 @@ enum {
 	CML  = OPR1 | 00020, /* complement L */
 	RAR  = OPR1 | 00010, /* rotate AC right */
 	RAL  = OPR1 | 00004, /* rotate AC left */
-	ROT2 = OPR1 | 00002, /* rotate twice */
+	BSW  = OPR1 | 00002, /* byte swap (not supported) / rotate twice */
 	IAC  = OPR1 | 00001, /* increment AC */
 
 	NOP  = OPR1,
-	RTR  = RAR  | ROT2,  /* rotate twice right */
-	RTL  = RAL  | ROT2,  /* rotate twice left */
+	RTR  = RAR  | BSW,   /* rotate twice right */
+	RTL  = RAL  | BSW,   /* rotate twice left */
 	STA  = CLA  | CMA,   /* set AC */
 	STL  = CLL  | CML,   /* set L */
 	CIA  = CMA  | IAC,   /* complement and increment AC (negate AC) */
+	GLK  = CLA  | RAL,   /* get link */
 
 	/* group 2 */
 	OPR2 =        07400,
@@ -115,7 +116,15 @@ enum {
 	SPA  = SKP  | SMA,   /* skip on positive AC */
 	SNA  = SKP  | SZA,   /* skip on non-zero AC */
 	SZL  = SKP  | SNL,   /* skip on zero L */
+
+	/* privileged instructions (not supported) */
+	OSR  = OPR2 | 00004, /* or switch register */
+	HLT  = OPR2 | 00002, /* halt */
+
+	/* group 3 (not supported) */
+	OPR3 = OPR2 | 00001
 };
+
 extern void opr(int);
 
 /*
