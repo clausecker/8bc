@@ -18,24 +18,37 @@ static int unescape(const char **);
 unsigned short lineno = 1;
 %}
 
-%x	COMMENT
 ESC	\*[0et*'"n]
 
 %%
 
 %{
-	/* silence warning about unused input() */
-	(void)input;
-
 	/* default assignment if we don't have a better value */
 	yylval.value = TOKEN;
 %}
 
-"/*"			BEGIN COMMENT;
-<COMMENT>"*/"		BEGIN INITIAL;
-<COMMENT>[^*\n]+	/* discard comments */
-<COMMENT>"*"		/* discard comments */
-<COMMENT>\n		|
+"/*"			{
+				char c0 = '\0', c1;
+
+				/*
+				 * While POSIX says that input() returns 0 on
+				 * EOF, some lex versions return EOF instead.
+				 */
+				while (c1 = input(), c1 != 0 && c1 != EOF) {
+					if (c1 == '\n')
+						lineno++;
+
+					if (c0 == '*' && c1 == '/')
+						goto done;
+
+					c0 = c1;
+				}
+
+				/* EOF encountered while in comment */
+				error(NULL, "unterminated comment");
+
+			done:	;
+			}
 
 \n			lineno++;
 "=*"			return (ASMUL);
