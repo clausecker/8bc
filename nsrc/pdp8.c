@@ -25,8 +25,6 @@ static struct expr framelabel = { 0, "(frame)" };
 static struct expr stacklabel = { 0, "(stack)" };
 static struct expr autolabel = { 0, "(auto)" };
 
-
-
 /*
  * Generate a string representation of the address of e as needed for
  * emitl.  e must be of type LCONST, RVALUE, LLABEL, LUND, RSTACK,
@@ -99,7 +97,7 @@ emitr(const struct expr *e)
  * which is reused by the next call to this function.
  */
 static const char *
-lit(struct expr *e)
+arg(const struct expr *e)
 {
 	static char buf[16];
 	int v = e->value;
@@ -135,4 +133,170 @@ lit(struct expr *e)
 	sprintf(buf, "%s%s", prefix, lstr(e));
 
 	return (buf);
+}
+
+extern struct expr
+r2lval(const struct expr *e)
+{
+	struct expr r = *e;
+	int v = e->value;
+
+	if (isvalid(v) && isrval(v))
+		r.value = v | LMASK;
+	else
+		r.value = NORVAL;
+
+	return (r);
+}
+
+extern struct expr
+l2rval(const struct expr *e)
+{
+	struct expr r = *e;
+	int v = e->value;
+
+	if (isvalid(v) && islval(v))
+		r.value = v & ~LMASK;
+	else
+		r.value = NOLVAL;
+
+	return (r);
+}
+
+extern void
+and(const struct expr *e)
+{
+	instr("AND %s", arg(e));
+}
+
+extern void
+tad(const struct expr *e)
+{
+	instr("TAD %s", arg(e));
+}
+
+extern void
+isz(const struct expr *e)
+{
+	instr("ISZ %s", arg(e));
+}
+
+extern void
+dca(const struct expr *e)
+{
+	instr("DCA %s", arg(e));
+}
+
+extern void
+jms(const struct expr *e)
+{
+	instr("JMS %s", arg(e));
+}
+
+extern void
+jmp(const struct expr *e)
+{
+	instr("JMP %s", arg(e));
+}
+
+extern void
+lda(const struct expr *e)
+{
+	opr(CLA);
+	tad(e);
+}
+
+/*
+ * Emit a group 1 microcoded instruction.  Up to four instructions may
+ * be emitted:
+ *
+ * one of CLA CMA STA
+ * one of CLL CML STL
+ * one of RAR RAL BSW RTR RTL
+ * finally, IAC
+ *
+ * if no bit is set, a NOP is emitted.  It is assumed that op refers to
+ * a group 1 microcoded instruction.
+ */
+static void
+opr1(int op)
+{
+	static char buf[4 * 4 + 1];
+
+	buf[0] = '\0';
+
+	switch (op & (CLA | CMA)) {
+	case CLA: strcpy(buf, " CLA"); break;
+	case CMA: strcpy(buf, " CMA"); break;
+	case STA: strcpy(buf, " STA"); break;
+	}
+
+	switch (op & (CLL | CML)) {
+	case CLL: strcat(buf, " CLL"); break;
+	case CML: strcat(buf, " CML"); break;
+	case STL: strcat(buf, " STL"); break;
+	}
+
+	switch (op & (RAR | RAL | BSW)) {
+	case 0: break;
+	case RAR: strcat(buf, " RAR"); break;
+	case RAL: strcat(buf, " RAL"); break;
+	case BSW: strcat(buf, " BSW"); break;
+	case RTR: strcat(buf, " RTR"); break;
+	case RTL: strcat(buf, " RTL"); break;
+
+	default:
+		fatal(NULL, "invalid OPR instruction %04o", op);
+	}
+
+	if ((op & IAC) == IAC)
+		strcat(buf, " IAC");
+
+	instr(buf[0] == '\0' ? "NOP" : buf + 1);
+}
+
+/*
+ * Emit a group 2 microcoded instruction.  Up to four instructions may
+ * be emitted:
+ *
+ *       any of SMA SZA SNL
+ * or up any of SPA SNA SZL
+ * and a CLA.
+ *
+ * If none of the bits are set, a NOP is emitted.  It is assumed that
+ * op refers to a group 2 microcoded instruction.
+ */
+static void
+opr2(int op)
+{
+	static const char mnemo[2][3][5] = { " SNL", " SZA", " SMA", " SZL", " SNA", " SPA" };
+	static char buf[4 * 4 + 1];
+	int i, skip;
+
+	buf[0] = '\0';
+	skip = (op & SKP) == SKP;
+
+	for (i = 0; i < 3; i++)
+		if (op & 00020 << i)
+			strcat(buf, mnemo[skip][i]);
+
+	if ((op & CLA) == CLA)
+		strcat(buf, " CLA");
+
+	instr(buf[0] == '\0' ? "NOP" : buf + 1);
+}
+
+extern void
+opr(int op)
+{
+	if ((op & OPR1) != OPR1)
+		goto inval; /* not an OPR instruction */
+	else if ((op & 00400) == 0)
+		opr1(op);   /* OPR group 1 */
+	else if ((op & 00007) == 0)
+		opr2(op);   /* OPR group 2 */
+	else
+		goto inval; /* OPR group 3 or privileged */
+
+inval:	fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 }

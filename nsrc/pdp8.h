@@ -51,6 +51,7 @@ enum {
 #define islabel(x) (((x) & 0060000) == RLABEL)
 #define islval(x) ((x) & LMASK)
 #define isrval(x) (!islval(x))
+#define isvalid(x) (rclass(x) != SPECIAL)
 #define onstack(x) (rclass(x) == RSTACK)
 
 /*
