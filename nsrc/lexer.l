@@ -24,6 +24,7 @@ ESC	\*[0et*'"n]
 
 %{
 	/* default assignment if we don't have a better value */
+	memset(yylval.name, '0', MAXNAME);
 	yylval.value = TOKEN;
 %}
 
