@@ -180,8 +180,9 @@ extern struct expr l2rval(const struct expr *);
  *
  * expr = spill(expr)
  *     allocate a frame register for expr and return it.  If expr is
- *     of type RVALUE or LVALUE, return it unchanged.  The result always
- *     has storage class RVALUE or LVALUE.
+ *     of type RVALUE, LVALUE, RSTACK, LSTACK, RARG, LARG, RAUTO, or
+ *     LAUTO, return it unchanged.  Otherwise the result always has type
+ *     RVALUE or LVALUE.
  *
  * newframe(expr)
  *     Start a new call frame and emit a function prologue for a

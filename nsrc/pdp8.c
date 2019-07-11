@@ -137,38 +137,11 @@ skip(int n)
 static const char *
 arg(const struct expr *e)
 {
+	struct expr sp;
 	static char buf[16];
-	int v = e->value;
-	const char *prefix = "";
 
-	switch (class(v)) {
-	case LLABEL:
-	case LUND:
-	case RLABEL:
-	case RUND:
-	case LCONST:
-	case RCONST:
-		/* TODO: spill */
-		fatal(e->name, "spill not implemented");
-
-	case LVALUE:
-	case LSTACK:
-	case LAUTO:
-	case LARG:
-		prefix = "I ";
-		break;
-
-	case RVALUE:
-	case RSTACK:
-	case RAUTO:
-	case RARG:
-		break;
-
-	default:
-		fatal(e->name, "invalid arg to %s: %06o", __func__, val(v));
-	}
-
-	sprintf(buf, "%s%s", prefix, lstr(e));
+	sp = spill(e);
+	sprintf(buf, "%s%s", islval(sp.value) ? "I " : "", lstr(&sp));
 
 	return (buf);
 }
@@ -370,23 +343,38 @@ extern struct expr
 spill(const struct expr *e)
 {
 	struct expr r = { 0, "" };
-	int i, v;
+	int i, v = e->value;
 
-	v = e->value;
-	if (rclass(v) == RVALUE) {
-		r.value = v;
+	switch (class(v)) {
+	case RVALUE:
+	case LVALUE:
+	case RARG:
+	case LARG:
+	case RSTACK:
+	case LSTACK:
+	case RAUTO:
+	case LAUTO:
+		r = *e;
 		return (r);
-	}
 
-	/* don't spill zero page addresses */
-	if (class(v) == LCONST && val(v) < NZEROPAGE) {
-		r.value = RVALUE;
-		return (r);
-	}
+	case LCONST:
+		/* don't spill zero page addresses */
+		if (val(v) < NZEROPAGE) {
+			memcpy(r.name, e->name, MAXNAME);
+			r.value = RVALUE | val(v);
+			return (r);
+		} else
+			break;
 
-	/* all spilled labels are made to have class [RL]LABEL */
-	if (islabel(v))
+	case RUND:
+	case LUND:
+		/* all spilled labels are made to have class [RL]LABEL */
 		v &= ~RUND;
+		break;
+
+	default:
+		;
+	}
 
 	/* was v spilled before? */
 	for (i = 0; i < nframe; i++)
