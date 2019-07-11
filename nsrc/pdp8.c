@@ -35,7 +35,8 @@ static struct expr autolabel = { 0, "(auto)" };
  * tos
  *     the last stack register pushed
  */
-static signed char stacksize, tos;
+static unsigned char stacksize;
+static signed char tos;
 
 /*
  * Call frame variables.
@@ -52,7 +53,7 @@ static signed char stacksize, tos;
  * frametmpl
  *     frame register template
  */
-static signed char nparam, nauto, nframe;
+static unsigned char nparam, nauto, nframe;
 static unsigned short frametmpl[NSCRATCH];
 
 /*
@@ -364,6 +365,39 @@ pop(struct expr *e)
 	e->value = EXPIRED;
 }
 
-extern void newframe(struct expr *);
-extern void endframe(void);
+extern struct expr
+spill(const struct expr *e)
+{
+	struct expr r = { 0, "" };
+	int i, v;
 
+	v = e->value;
+	if (rclass(v) == RVALUE) {
+		r.value = v;
+		return (r);
+	}
+
+	/* don't spill zero page addresses */
+	if (class(v) == LCONST && val(v) < NZEROPAGE) {
+		r.value = RVALUE;
+		return (r);
+	}
+
+	/* all spilled labels are made to have class [RL]LABEL */
+	if (islabel(v))
+		v &= ~RUND;
+
+	/* was v spilled before? */
+	for (i = 0; i < nframe; i++)
+		if (frametmpl[i] == v)
+			goto found;
+
+	/* not found */
+	if (nframe >= NSCRATCH)
+		fatal(NULL, "frame overflow");
+
+	frametmpl[nframe++] = v;
+
+found:	r.value = MINSCRATCH + i | RVALUE | v & LMASK;
+	return (r);
+}

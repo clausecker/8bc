@@ -178,6 +178,11 @@ extern struct expr l2rval(const struct expr *);
  *     overwritten with EXPIRED to prevent accidental reuse.  If expr
  *     is not on the stack, this does nothing.
  *
+ * expr = spill(expr)
+ *     allocate a frame register for expr and return it.  If expr is
+ *     of type RVALUE or LVALUE, return it unchanged.  The result always
+ *     has storage class RVALUE or LVALUE.
+ *
  * newframe(expr)
  *     Start a new call frame and emit a function prologue for a
  *     function named expr.name.  This also generates an appropriate
@@ -188,5 +193,6 @@ extern struct expr l2rval(const struct expr *);
  */
 extern void push(struct expr *);
 extern void pop(struct expr *);
+extern struct expr spill(const struct expr *);
 extern void newframe(struct expr *);
 extern void endframe(void);
