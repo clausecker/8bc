@@ -13,7 +13,7 @@
  * NULL, XXXXXXXX is omitted.  A line break is appended to the error
  * message.
  */
-extern short errcnt;
+extern short errcnt, warncnt;
 extern void warn(const char *name, const char *fmt, ...);
 extern void error(const char *name, const char *fmt, ...);
 extern void fatal(const char *name, const char *fmt, ...);

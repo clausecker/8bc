@@ -9,7 +9,7 @@
 #include "error.h"
 #include "parser.h"
 
-short errcnt = 0;
+short errcnt = 0, warncnt = 0;
 
 static void
 verror(const char *name, const char *fmt, va_list ap)
@@ -27,6 +27,8 @@ warn(const char *name, const char *fmt, ...)
 	va_start(ap, fmt);
 	verror(name, fmt, ap);
 	va_end(ap);
+
+	warncnt++;
 }
 
 extern void
@@ -38,8 +40,10 @@ error(const char *name, const char *fmt, ...)
 	verror(name, fmt, ap);
 	va_end(ap);
 
-	if (++errcnt >= MAXERRORS)
-		fatal(NULL, "too many errors");
+	if (++errcnt >= MAXERRORS) {
+		fprintf(stderr, "too many errors\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 extern void
