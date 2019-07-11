@@ -90,6 +90,12 @@ emitr(const struct expr *e)
 	}
 }
 
+extern void
+skip(int n)
+{
+	instr("*.+%04o", n);
+}
+
 /*
  * Turn expr into a string suitable as an argument to a PDP-8
  * instruction.  If needed, spill the argument into a zero page

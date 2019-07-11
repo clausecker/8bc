@@ -138,9 +138,13 @@ extern void opr(int);
  * emitl(expr)
  *     Emits the address of expr into the instruction stream.  expr can
  *     be of type LCONST, RVALUE, LLABEL, LUND, RSTACK, RAUTO, or RARG.
+ *
+ * skip(int)
+ *     Skip that many memory locations.
  */
 extern void emitr(const struct expr *);
 extern void emitl(const struct expr *);
+extern void skip(int);
 
 /*
  * lvalues and rvalues.
