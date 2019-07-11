@@ -36,7 +36,7 @@ advance(int target)
 	/* align to a multiple of 8 */
 	column &= ~7;
 
-	while (column <= target) {
+	while (column < target) {
 		fputc('\t', asmfile);
 		column += 8;
 	}
