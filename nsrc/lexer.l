@@ -91,10 +91,10 @@ ESC	\*[0et*'"n]
 
 [0-9]+			yylval.value = nconst() | RCONST;  return (CONSTANT);
 \'([^*'\n]|{ESC})\'	yylval.value = cconst() | RCONST;  return (CONSTANT);
-\"([^*"\n]|{ESC})*\"	fatal(NULL, "string constants not implemented");
+\"([^*"\n]|{ESC})*\"	error(NULL, "string constants not implemented");
 
-\"			fprintf(stderr, "unterminated string constant\n");
-'			fprintf(stderr, "unterminated character constant\n");
+\"			error(NULL, "unterminated string constant\n");
+'			error(NULL, "unterminated character constant\n");
 
 [A-Za-z_][[:alnum:]_]*	{
 				size_t i;
