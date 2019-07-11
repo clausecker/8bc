@@ -26,6 +26,36 @@ static struct expr stacklabel = { 0, "(stack)" };
 static struct expr autolabel = { 0, "(auto)" };
 
 /*
+ * Stack variables.
+ *
+ * stacksize
+ *     the maximum amount of stack registers used in the current
+ *     function
+ *
+ * tos
+ *     the last stack register pushed
+ */
+static signed char stacksize, tos;
+
+/*
+ * Call frame variables.
+ *
+ * nparam
+ *     number of function parameters
+ *
+ * nauto
+ *     number of automatic variables
+ *
+ * nframe
+ *     number of frame registers
+ *
+ * frametmpl
+ *     frame register template
+ */
+static signed char nparam, nauto, nframe;
+static unsigned short frametmpl[NSCRATCH];
+
+/*
  * Generate a string representation of the address of e as needed for
  * emitl.  e must be of type LCONST, RVALUE, LLABEL, LUND, RSTACK,
  * RAUTO, or RARG.  The returned string is placed in a static buffer.
@@ -306,3 +336,34 @@ opr(int op)
 
 inval:	fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 }
+
+extern void
+push(struct expr *e)
+{
+	e->value = ++tos | RSTACK;
+	memset(e->name, 0, MAXNAME);
+
+	if (tos > stacksize) {
+		stacksize = tos;
+		if (stacksize > NSCRATCH)
+			error(NULL, "stack overflow");
+	}
+
+	dca(e);
+}
+
+extern void
+pop(struct expr *e)
+{
+	if (!onstack(e->value))
+		return;
+
+	if (val(e->value) != tos--)
+		fatal(NULL, "can only pop top of stack");
+
+	e->value = EXPIRED;
+}
+
+extern void newframe(struct expr *);
+extern void endframe(void);
+

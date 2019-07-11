@@ -167,9 +167,10 @@ extern struct expr l2rval(const struct expr *);
 /*
  * Call frame management.
  *
- * expr = push()
+ * push(expr)
  *     Allocate a scratch register and fill it with the current content
- *     of AC.  The content of AC is undefined afterwards.
+ *     of AC.  The content of AC is undefined afterwards.  Set expr to
+ *     refer to it.
  *
  * pop(expr)
  *     Deallocate scratch register expr.  Only the most recently
@@ -185,7 +186,7 @@ extern struct expr l2rval(const struct expr *);
  * endframe()
  *     End the current call frame and emit the required data.
  */
-extern struct expr *push(void);
+extern void push(struct expr *);
 extern void pop(struct expr *);
 extern void newframe(struct expr *);
 extern void endframe(void);
