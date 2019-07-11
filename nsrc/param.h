@@ -35,5 +35,5 @@ enum {
 	MAXNAME = 8,				/* maximum name size */
 };
 
-/* format string to print a name, must be synchronised with MAXNAME */
-#define NAMEFMT "%.8s"
+#define NAMEFMT "%.8s"				/* format string to print a name */
+#define NAMEFMTF "%-8.8s"			/* same, but with a fixed field size */

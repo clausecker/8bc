@@ -14,7 +14,7 @@ short errcnt = 0;
 static void
 verror(const char *name, const char *fmt, va_list ap)
 {
-	fprintf(stderr, "%5d " NAMEFMT " ", lineno, name == NULL ? "" : name);
+	fprintf(stderr, "%5d " NAMEFMTF " ", lineno, name == NULL ? "" : name);
 	vfprintf(stderr, fmt, ap);
 	fputc('\n', stderr);
 }
