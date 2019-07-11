@@ -124,7 +124,8 @@ emitr(const struct expr *e)
 extern void
 skip(int n)
 {
-	instr("*.+%04o", n);
+	if (n > 0)
+		instr("*.+%04o", n);
 }
 
 /*

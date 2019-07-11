@@ -85,6 +85,9 @@ definition	: define_name initializer ';' /* simple definition */
 			if (have > want)
 				want = have;
 
+			if (want == 0)
+				warn($1.name, "zero length vector");
+
 			skip(want);
 		}
 		| define_name '(' parameters ')' statement /* function definition */
