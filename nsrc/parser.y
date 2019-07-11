@@ -1,5 +1,9 @@
 %{
+#include <stdio.h>
+
+#include "asm.h"
 #include "param.h"
+#include "name.h"
 #include "pdp8.h"
 #include "error.h"
 #include "parser.h"
@@ -65,27 +69,70 @@
 %%
 
 program		: /* empty */
-		| program definition
+		| program definition { blank(); }
 		;
 
-definition	: NAME initializer ';' /* simple definition */
-		| NAME '[' vector_length ']' initializer ';' /* vector definition */
-		| NAME '(' parameters ')' statement /* function definition */
+definition	: define_name initializer ';' /* simple definition */
+		| define_name '[' {
+			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
+			comment(NAMEFMT, $1.name);
+		} vector_length ']' initializer ';' { /* vector definition */
+			int want, have;
+
+			want = val($4.value);
+			have = val($6.value);
+
+			if (have > want)
+				want = have;
+
+			skip(want);
+		}
+		| define_name '(' parameters ')' statement /* function definition */
 		;
 
-initializer	: /* empty */
+define_name	: NAME {
+			struct expr *e;
+
+			e = define($1.name);
+			if (rclass(e->value) != RUND)
+				error($1.name, "redefined");
+			else
+				putlabel(e);
+
+			$$ = *e;
+		}
+		;
+
+		/*
+		 * In a simple definition, the token left from this one
+		 * is a define_name, in a vector definition its a ].
+		 * Use this to place a comment with the name of what we
+		 * just defined in a simple definition.
+		 */
+initializer	: /* empty */ {
+			skip(1);
+			if ($0.value != TOKEN)
+				comment(NAMEFMT, $0.name);
+
+			$$.value = 0;
+		}
 		| ival_list
 		;
 
-ival_list	: ival
-		| ival_list ',' ival
+ival_list	: ival {
+			if ($0.value != TOKEN)
+				comment(NAMEFMT, $0.name);
+
+			$$.value = 1;
+		}
+		| ival_list ',' ival { $$.value = $1.value + 1; }
 		;
 
-ival		: CONSTANT
-		| NAME
+ival		: CONSTANT { emitr(&$1); }
+		| NAME { emitl(define($1.name)); }
 		;
 
-vector_length	: /* empty */
+vector_length	: /* empty */ { $$.value = RCONST | 0; }
 		| CONSTANT
 		;
 
