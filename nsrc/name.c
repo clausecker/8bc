@@ -80,7 +80,7 @@ endscope(int scope)
 extern void
 newlabel(struct expr *e)
 {
-	e->value = LLABEL | labelno++;
+	e->value = LUND | labelno++;
 	if (labelno > 07777)
 		fatal(e->name, "too many labels");
 }
