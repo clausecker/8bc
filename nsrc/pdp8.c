@@ -339,7 +339,7 @@ pop(struct expr *e)
 	e->value = EXPIRED;
 }
 
-extern struct expr
+static struct expr
 spill(const struct expr *e)
 {
 	struct expr r = { 0, "" };
@@ -389,4 +389,32 @@ spill(const struct expr *e)
 
 found:	r.value = MINSCRATCH + i | RVALUE | v & LMASK;
 	return (r);
+}
+
+extern void
+newframe(struct expr *fun)
+{
+	struct expr zero = { 0, "" };
+
+	newlabel(&framelabel);
+	newlabel(&stacklabel);
+	newlabel(&autolabel);
+
+	tos = -1;
+	stacksize = 0;
+
+	nparam = 0;
+	nauto = 0;
+	nframe = 0;
+	endscope(0);
+
+	/* function prologue */
+	emitr(&zero);
+	instr("ENTER");
+	emitl(&framelabel);
+}
+
+extern void endframe(void)
+{
+	/* TODO */
 }
