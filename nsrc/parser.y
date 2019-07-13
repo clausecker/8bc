@@ -92,7 +92,10 @@ definition	: define_name initializer ';'
 		}
 
 		/* function definition */
-		| define_name { newframe(&$1); } '(' parameters ')' statement
+		| define_name { newframe(&$1); } '(' parameters ')' statement {
+			/* TODO: emit return */
+			endframe();
+		}
 		;
 
 define_name	: NAME {
@@ -149,7 +152,10 @@ param_list	: param
 		| param_list ',' param
 		;
 
-param		: NAME
+param		: NAME {
+			newparam(&$1);
+			declare(&$1);
+		}
 		;
 
 statement	: AUTO auto_list ';' statement
@@ -177,22 +183,27 @@ statement_list	: /* empty */
 		| statement_list statement
 		;
 
-auto_list	: name_const
-		| auto_list ',' name_const
+auto_list	: auto_decl
+		| auto_list ',' auto_decl
 		;
 
-name_const	: NAME constant_opt
+auto_decl	: NAME {
+			newauto(&$1);
+			declare(&$1);
+		}
+		| NAME CONSTANT {
+			newauto(&$1);
+			declare(&$1);
+			lda(&$2);
+			dca(&$1);
+		}
 		;
 
 extrn_list	: extrn_decl
 		| extrn_list ',' extrn_decl
 		;
 
-extrn_decl	: NAME
-		;
-
-constant_opt	: /* empty */
-		| CONSTANT
+extrn_decl	: NAME { declare(define($1.name)); }
 		;
 
 arguments	: /* empty */
