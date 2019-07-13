@@ -72,25 +72,27 @@ program		: /* empty */
 		| program definition { blank(); }
 		;
 
-definition	: define_name initializer ';' /* simple definition */
+		/* simple definition */
+definition	: define_name initializer ';'
+
+		/* vector definition */
 		| define_name '[' {
 			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
 			comment(NAMEFMT, $1.name);
-		} vector_length ']' initializer ';' { /* vector definition */
+		} vector_length ']' initializer ';' {
 			int want, have;
 
 			want = val($4.value);
 			have = val($6.value);
 
-			if (have > want)
-				want = have;
-
-			if (want == 0)
+			if (have < want)
+				skip(want - have);
+			else if (want == 0)
 				warn($1.name, "zero length vector");
-
-			skip(want);
 		}
-		| define_name '(' parameters ')' statement /* function definition */
+
+		/* function definition */
+		| define_name { newframe(&$1); } '(' parameters ')' statement
 		;
 
 define_name	: NAME {
@@ -202,8 +204,8 @@ argument_list	: expr
 		;
 
 expr		: NAME
-		| CONSTANT
-		| '(' expr ')'
+		| CONSTANT /* default action */
+		| '(' expr ')' { $$ = $2; }
 		| expr '(' arguments ')'
 		| expr '[' expr ']'
 		| expr INC
