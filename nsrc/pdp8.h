@@ -178,22 +178,26 @@ extern struct expr l2rval(const struct expr *);
  *     overwritten with EXPIRED to prevent accidental reuse.  If expr
  *     is not on the stack, this does nothing.
  *
- * expr = spill(expr)
- *     allocate a frame register for expr and return it.  If expr is
- *     of type RVALUE, LVALUE, RSTACK, LSTACK, RARG, LARG, RAUTO, or
- *     LAUTO, return it unchanged.  Otherwise the result always has type
- *     RVALUE or LVALUE.
- *
  * newframe(expr)
  *     Start a new call frame and emit a function prologue for a
  *     function named expr.name.  This also generates an appropriate
  *     label.
+ *
+ * newparam(expr)
+ *     Remember expr as a new parameter to the current function and
+ *     update expr->value appropriately.  Parameters must be added from
+ *     left to right.
+ *
+ * newauto(expr)
+ *    Remembers expr as a new automatic variable and update expr->value
+ *    appropriately.
  *
  * endframe()
  *     End the current call frame and emit the required data.
  */
 extern void push(struct expr *);
 extern void pop(struct expr *);
-extern struct expr spill(const struct expr *);
 extern void newframe(struct expr *);
+extern void newparam(struct expr *);
+extern void newauto(struct expr *);
 extern void endframe(void);

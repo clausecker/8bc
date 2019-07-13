@@ -56,6 +56,9 @@ static signed char tos;
 static unsigned char nparam, nauto, nframe;
 static unsigned short frametmpl[NSCRATCH];
 
+/* forward declarations */
+static struct expr spill(const struct expr *);
+
 /*
  * Generate a string representation of the address of e as needed for
  * emitl.  e must be of type LCONST, RVALUE, LLABEL, LUND, RSTACK,
@@ -249,7 +252,7 @@ opr1(int op)
 	}
 
 	switch (op & (RAR | RAL | BSW)) {
-	case 0: break;
+	case OPR1: break;
 	case RAR: strcat(buf, " RAR"); break;
 	case RAL: strcat(buf, " RAL"); break;
 	case BSW: strcat(buf, " BSW"); break;
@@ -309,6 +312,8 @@ opr(int op)
 	else
 		goto inval; /* OPR group 3 or privileged */
 
+	return;
+
 inval:	fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 }
 
@@ -339,6 +344,12 @@ pop(struct expr *e)
 	e->value = EXPIRED;
 }
 
+/*
+ * Allocate a frame register for expr and return it.  If expr is
+ * of type RVALUE, LVALUE, RSTACK, LSTACK, RARG, LARG, RAUTO, or
+ * LAUTO, return it unchanged.  Otherwise the result always has type
+ * RVALUE or LVALUE.
+ */
 static struct expr
 spill(const struct expr *e)
 {
@@ -414,7 +425,20 @@ newframe(struct expr *fun)
 	emitl(&framelabel);
 }
 
+extern void
+newparam(struct expr *par)
+{
+	par->value = RARG | nparam++;
+}
+
+extern void
+newauto(struct expr *var)
+{
+	var->value = RAUTO | nauto++;
+}
+
 extern void endframe(void)
 {
 	/* TODO */
+	instr("LEAVE");
 }
