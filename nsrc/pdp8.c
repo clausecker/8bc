@@ -62,7 +62,7 @@ static struct expr spill(const struct expr *);
 /*
  * Generate a string representation of the address of e as needed for
  * emitl.  e must be of type LCONST, RVALUE, LLABEL, LUND, RSTACK,
- * RAUTO, or RARG.  The returned string is placed in a static buffer.
+ * RAUTO, or RPARAM.  The returned string is placed in a static buffer.
  */
 static const char *
 lstr(const struct expr *e)
@@ -89,7 +89,7 @@ lstr(const struct expr *e)
 		sprintf(buf, "L%04o+%03o", val(autolabel.value), val(v));
 		break;
 
-	case RARG:
+	case RPARAM:
 		sprintf(buf, "L%04o+%03o", val(framelabel.value), val(v) + 2);
 		break;
 
@@ -346,7 +346,7 @@ pop(struct expr *e)
 
 /*
  * Allocate a frame register for expr and return it.  If expr is
- * of type RVALUE, LVALUE, RSTACK, LSTACK, RARG, LARG, RAUTO, or
+ * of type RVALUE, LVALUE, RSTACK, LSTACK, RPARAM, LPARAM, RAUTO, or
  * LAUTO, return it unchanged.  Otherwise the result always has type
  * RVALUE or LVALUE.
  */
@@ -359,8 +359,8 @@ spill(const struct expr *e)
 	switch (class(v)) {
 	case RVALUE:
 	case LVALUE:
-	case RARG:
-	case LARG:
+	case RPARAM:
+	case LPARAM:
 	case RSTACK:
 	case LSTACK:
 	case RAUTO:
@@ -428,13 +428,13 @@ newframe(struct expr *fun)
 extern void
 newparam(struct expr *par)
 {
-	par->value = RARG | nparam++;
+	par->value = LPARAM | nparam++;
 }
 
 extern void
 newauto(struct expr *var)
 {
-	var->value = RAUTO | nauto++;
+	var->value = LAUTO | nauto++;
 }
 
 extern void endframe(void)
