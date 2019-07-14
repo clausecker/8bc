@@ -101,11 +101,9 @@ definition	: define_name initializer ';'
 define_name	: NAME {
 			struct expr *e;
 
+			/* TODO: detect redefinitions */
 			e = define($1.name);
-			if (rclass(e->value) != RUND)
-				error($1.name, "redefined");
-			else
-				putlabel(e);
+			putlabel(e);
 
 			$$ = *e;
 		}

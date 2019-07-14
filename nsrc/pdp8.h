@@ -26,8 +26,8 @@ enum {
 	LVALUE = 0110000, /* zero page register points to value */
 	RLABEL = 0020000, /* label is value */
 	LLABEL = 0120000, /* label points to value */
-	RUND   = 0030000, /* undefined/undeclared RLABEL */
-	LUND   = 0130000, /* undefined/undeclared LLABEL */
+/*	       = 0030000,    unused */
+/*	       = 0130000,    unused */
 	RSTACK = 0040000, /* stack register is value */
 	LSTACK = 0140000, /* stack register points to value */
 	RAUTO  = 0050000, /* pointer to automatic variable area */
@@ -48,7 +48,6 @@ enum {
 #define class(x) ((x) & CMASK)
 #define rclass(x) ((x) & CMASK & ~LMASK)
 #define isconst(x) (class(x) == RCONST)
-#define islabel(x) (((x) & 0060000) == RLABEL)
 #define islval(x) ((x) & LMASK)
 #define isrval(x) (!islval(x))
 #define isvalid(x) (rclass(x) != SPECIAL)
@@ -133,12 +132,11 @@ extern void opr(int);
  *
  * emitr(expr)
  *     Emits the value of expr into the instruction stream.  expr must
- *     be of type RCONST, RLABEL, or RUND.
+ *     be of type RCONST or RLABEL.
  *
  * emitl(expr)
  *     Emits the address of expr into the instruction stream.  expr can
- *     be of type LCONST, RVALUE, LLABEL, LUND, RSTACK, RAUTO, or
- *     RPARAM.
+ *     be of type LCONST, RVALUE, LLABEL, RSTACK, RAUTO, or RPARAM.
  *
  * skip(int)
  *     Skip that many memory locations.
@@ -152,15 +150,15 @@ extern void skip(int);
  *
  * expr = r2lval(expr)
  *     Interprete an rvalue as an lvalue, effectively dereferencing expr.
- *     expr must have storage class RCONST, RVALUE, RLABEL, RUND, RSTACK
+ *     expr must have storage class RCONST, RVALUE, RLABEL, RSTACK,
  *     RAUTO, or RPARAM.  If the class is invalid, the result's value is
  *     NORVAL.
  *
  * expr = l2rval(expr)
  *     Interprete an lvalue as an rvalue, effectively taking the address
  *     of expr.  expr must have storage class LCONST, LVALUE, LLABEL,
- *     LUND, LSTACK, LAUTO, or LPARAM.  If the class is invalid, the
- *     result's value is NOLVAL.
+ *     LSTACK, LAUTO, or LPARAM.  If the class is invalid, the result's
+ *     value is NOLVAL.
  */
 extern struct expr r2lval(const struct expr *);
 extern struct expr l2rval(const struct expr *);

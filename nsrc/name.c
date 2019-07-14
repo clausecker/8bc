@@ -50,6 +50,7 @@ lookup(const char name[MAXNAME])
 	return (NULL);
 }
 
+/* TODO: add a mechanism to detect redeclarations */
 extern struct expr *
 declare(struct expr *e)
 {
@@ -80,42 +81,33 @@ endscope(int scope)
 extern void
 newlabel(struct expr *e)
 {
-	e->value = LUND | labelno++;
+	e->value = LLABEL | labelno++;
 	if (labelno > 07777)
 		fatal(e->name, "too many labels");
 }
 
 /*
- * Place a label.  If the label was already placed, emit an error and
- * do not place the label again.  If the label is not actually a label,
- * fail compilation.  Suffix the label with suffix.  Then change the
- * storage class of e from RUND to RLABEL resp LUND to LLABEL to avoid
- * the label being placed again.
+ * Place a label.  If the label is not actually a label, fail
+ * compilation.  Suffix the label with suffix.
  */
 static void
-placelabel(struct expr *e, int suffix)
+placelabel(const struct expr *e, int suffix)
 {
-	if (rclass(e->value) == RLABEL) {
-		error(e->name, "will not place label again");
-		return;
-	}
-
-	if (rclass(e->value) != RUND)
+	if (rclass(e->value) != RLABEL)
 		fatal(e->name, "not a label");
 
 	label("L%04o%c", val(e->value), suffix);
-	e->value = e->value & (~CMASK | LMASK) | RLABEL;
 }
 
 extern void
-putlabel(struct expr *e)
+putlabel(const struct expr *e)
 {
 	/* TODO: reify() needed? */
 	placelabel(e, ',');
 }
 
 extern void
-setlabel(struct expr *e)
+setlabel(const struct expr *e)
 {
 	placelabel(e, '=');
 }

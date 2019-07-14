@@ -61,7 +61,7 @@ static struct expr spill(const struct expr *);
 
 /*
  * Generate a string representation of the address of e as needed for
- * emitl.  e must be of type LCONST, RVALUE, LLABEL, LUND, RSTACK,
+ * emitl.  e must be of type LCONST, RVALUE, LLABEL, RSTACK,
  * RAUTO, or RPARAM.  The returned string is placed in a static buffer.
  */
 static const char *
@@ -77,7 +77,6 @@ lstr(const struct expr *e)
 		break;
 
 	case LLABEL:
-	case LUND:
 		sprintf(buf, "L%04o", val(v));
 		break;
 
@@ -114,7 +113,6 @@ emitr(const struct expr *e)
 	switch (class(e->value)) {
 	case RCONST:
 	case RLABEL:
-	case RUND:
 		le = r2lval(e);
 
 		return (instr(lstr(&le)));
@@ -376,12 +374,6 @@ spill(const struct expr *e)
 			return (r);
 		} else
 			break;
-
-	case RUND:
-	case LUND:
-		/* all spilled labels are made to have class [RL]LABEL */
-		v &= ~RUND;
-		break;
 
 	default:
 		;
