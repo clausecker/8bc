@@ -1,4 +1,5 @@
 %{
+#include <assert.h>
 #include <stdio.h>
 
 #include "asm.h"
@@ -168,7 +169,7 @@ statement	: AUTO auto_list ';' statement
 		| RETURN expr ';'
 		| RETURN ';'
 		| BREAK ';'
-		| expr ';'
+		| expr ';' { pop(&$1); }
 		| ';'
 		;
 
@@ -212,26 +213,114 @@ argument_list	: expr
 		| argument_list ',' expr
 		;
 
-expr		: NAME
+expr		: NAME {
+			struct expr *e;
+
+			/* if $1 not found, declare as internal variable */
+			e = lookup($1.name);
+			if (e == NULL) {
+				newlabel(&$1);
+				declare(&$1);
+				e = &$1;
+			}
+
+			$$ = *e;
+		}
 		| CONSTANT /* default action */
 		| '(' expr ')' { $$ = $2; }
 		| expr '(' arguments ')'
-		| expr '[' expr ']'
-		| expr INC
-		| expr DEC
-		| INC expr
-		| DEC expr
-		| '+' expr %prec INC
-		| '-' expr %prec INC
-		| '*' expr %prec INC
-		| '&' expr %prec INC
-		| '^' expr %prec INC
-		| '!' expr
-		| expr '*' expr
-		| expr '%' expr
-		| expr '/' expr
-		| expr '+' expr
-		| expr '-' expr
+		| expr '[' expr ']' {
+			lda(&$3);
+			pop(&$3);
+			tad(&$1);
+			pop(&$1);
+			push(&$$);
+			assert(isrval($$.value));
+			$$ = r2lval(&$$);
+		}
+		| expr INC {
+			lda(&$2);
+			isz(&$2);
+			opr(NOP);
+			pop(&$2);
+			push(&$$);
+		}
+		| expr DEC {
+			opr(STA);
+			tad(&$2);
+			dca(&$2);
+			lda(&$2);
+			opr(IAC);
+			pop(&$2);
+			push(&$$);
+		}
+		| INC expr {
+			isz(&$2);
+			opr(NOP);
+			$$ = $2;
+		}
+		| DEC expr {
+			opr(STA);
+			tad(&$2);
+			dca(&$2);
+			$$ = $2;
+		}
+		| '+' expr %prec INC { $$ = $2; }
+		| '-' expr %prec INC {
+			lda(&$2);
+			pop(&$2);
+			opr(CIA);
+			push(&$$);
+		}
+		| '*' expr %prec INC {
+			/* perform a load to get an rvalue if needed */
+			if (islval($2.value)) {
+				lda(&$2);
+				pop(&$2);
+				/* TODO: perhaps add reify */
+				push(&$2);
+			}
+
+			$$ = r2lval(&$2);
+		}
+		| '&' expr %prec INC {
+			$$ = l2rval(&$2);
+			if ($$.value = NOLVAL)
+				error($2.name, "not an lvalue");
+
+			/* TODO: YYERROR; */
+		}
+		| '^' expr %prec INC {
+			lda(&$2);
+			pop(&$2);
+			opr(CMA);
+			push(&$$);
+		}
+		| '!' expr {
+			lda(&$2);
+			pop(&$2);
+			opr(SNA | CLA);
+			opr(CLA | IAC);
+			push(&$$);
+		}
+		| expr '*' expr /* TODO */
+		| expr '%' expr /* TODO */
+		| expr '/' expr /* TODO */
+		| expr '+' expr {
+			lda(&$3);
+			pop(&$3);
+			tad(&$1);
+			pop(&$1);
+			push(&$$);
+		}
+		| expr '-' expr {
+			lda(&$3);
+			pop(&$3);
+			opr(CIA);
+			tad(&$1);
+			pop(&$1);
+			push(&$$);
+		}
 		| expr SHL expr
 		| expr SHR expr
 		| expr '<' expr
@@ -244,7 +333,12 @@ expr		: NAME
 		| expr '^' expr
 		| expr '\\' expr
 		| expr '?' expr ':' expr
-		| expr '=' expr
+		| expr '=' expr {
+			lda(&$3);
+			pop(&$3);
+			dca(&$1);
+			$$ = $1;
+		}
 		| expr ASMUL expr
 		| expr ASMOD expr
 		| expr ASDIV expr
