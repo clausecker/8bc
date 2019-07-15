@@ -4,7 +4,9 @@
 #include <stdlib.h>
 
 #include "param.h"
+#include "pdp8.h"
 #include "asm.h"
+#include "data.h"
 #include "error.h"
 #include "parser.h"
 
@@ -14,6 +16,7 @@ main(void)
 	asmfile = stdout;
 
 	yyparse();
+	dumpdata();
 	instr("$\n");
 
 	if (warncnt > 0)
