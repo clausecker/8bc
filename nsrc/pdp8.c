@@ -80,6 +80,10 @@ lstr(const struct expr *e)
 		sprintf(buf, "L%04o", val(v));
 		break;
 
+	case LDATA:
+		sprintf(buf, "DATA+%04o", val(v));
+		break;
+
 	case RSTACK:
 		sprintf(buf, "L%04o+%03o", val(stacklabel.value), val(v));
 		break;
@@ -113,6 +117,7 @@ emitr(const struct expr *e)
 	switch (class(e->value)) {
 	case RCONST:
 	case RLABEL:
+	case RDATA:
 		le = r2lval(e);
 
 		return (instr(lstr(&le)));

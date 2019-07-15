@@ -26,8 +26,8 @@ enum {
 	LVALUE = 0110000, /* zero page register points to value */
 	RLABEL = 0020000, /* label is value */
 	LLABEL = 0120000, /* label points to value */
-/*	       = 0030000,    unused */
-/*	       = 0130000,    unused */
+	RDATA  = 0030000, /* pointer to data area */
+	LDATA  = 0130000, /* value in data area */
 	RSTACK = 0040000, /* stack register is value */
 	LSTACK = 0140000, /* stack register points to value */
 	RAUTO  = 0050000, /* pointer to automatic variable area */
@@ -132,11 +132,12 @@ extern void opr(int);
  *
  * emitr(expr)
  *     Emits the value of expr into the instruction stream.  expr must
- *     be of type RCONST or RLABEL.
+ *     be of type RCONST or RLABEL, RDATA.
  *
  * emitl(expr)
  *     Emits the address of expr into the instruction stream.  expr can
- *     be of type LCONST, RVALUE, LLABEL, RSTACK, RAUTO, or RPARAM.
+ *     be of type LCONST, RVALUE, LLABEL, LDATA, RSTACK, RAUTO, or
+ *     RPARAM.
  *
  * skip(int)
  *     Skip that many memory locations.
@@ -150,15 +151,15 @@ extern void skip(int);
  *
  * expr = r2lval(expr)
  *     Interprete an rvalue as an lvalue, effectively dereferencing expr.
- *     expr must have storage class RCONST, RVALUE, RLABEL, RSTACK,
+ *     expr must have storage class RCONST, RVALUE, RLABEL, RDATA, RSTACK,
  *     RAUTO, or RPARAM.  If the class is invalid, the result's value is
  *     NORVAL.
  *
  * expr = l2rval(expr)
  *     Interprete an lvalue as an rvalue, effectively taking the address
  *     of expr.  expr must have storage class LCONST, LVALUE, LLABEL,
- *     LSTACK, LAUTO, or LPARAM.  If the class is invalid, the result's
- *     value is NOLVAL.
+ *     LDATA, LSTACK, LAUTO, or LPARAM.  If the class is invalid, the
+ *     result's value is NOLVAL.
  */
 extern struct expr r2lval(const struct expr *);
 extern struct expr l2rval(const struct expr *);

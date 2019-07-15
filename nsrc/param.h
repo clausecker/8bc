@@ -27,6 +27,7 @@ enum {
 enum {
 	DEFNSIZ = 00400,			/* definition table size */
 	DECLSIZ = 00040,			/* declaration table size */
+	DATASIZ = 01000,			/* data area size */
 };
 
 /* various parameters */
