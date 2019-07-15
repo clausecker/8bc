@@ -4,6 +4,7 @@
 
 #include "param.h"
 #include "pdp8.h"
+#include "data.h"
 #include "error.h"
 #include "parser.h"
 #include "y.tab.h"
@@ -11,7 +12,7 @@
 /* silence warning about unused yyunput() */
 #define YY_NO_UNPUT YY_NO_UNPUT
 
-static int nconst(void), cconst(void);
+static void nconst(void), cconst(void), sconst(void);
 static int unescape(const char **);
 
 /* the current line number */
@@ -89,9 +90,9 @@ ESC	\*[0et*'"n]
 [Bb][Rr][Ee][Aa][Kk]	return (BREAK);
 [Dd][Ee][Ff][Aa][Uu][Ll][Tt]	return (DEFAULT);
 
-[0-9]+			yylval.value = nconst() | RCONST;  return (CONSTANT);
-\'([^*'\n]|{ESC})\'	yylval.value = cconst() | RCONST;  return (CONSTANT);
-\"([^*"\n]|{ESC})*\"	error(NULL, "string constants not implemented");
+[0-9]+			nconst();  return (CONSTANT);
+\'([^*'\n]|{ESC})\'	cconst();  return (CONSTANT);
+\"([^*"\n]|{ESC})*\"	sconst();  return (CONSTANT);
 
 \"			error(NULL, "unterminated string constant\n");
 '			error(NULL, "unterminated character constant\n");
@@ -120,11 +121,11 @@ ESC	\*[0et*'"n]
 %%
 
 /*
- * parse a numerical (decimal or octal) constant from yytext and return
- * its value.  As per specificiation, the digits 8 and 9 are legal even
- * in octal constants.
+ * parse a numerical (decimal or octal) constant from yytext and store
+ * it in yylval.  As per specificiation, the digits 8 and 9 are legal
+ * even in octal constants.
  */
-static int
+static void
 nconst(void)
 {
 	size_t i;
@@ -133,19 +134,42 @@ nconst(void)
 	for (i = 0; yytext[i] != '\0'; i++)
 		n = n * base + yytext[i] - '0';
 
-	return (n & 07777);
+	if (yyleng <= MAXNAME)
+		strncpy(yylval.name, yytext, MAXNAME);
+	yylval.value = n & 07777 | RCONST;
 }
 
 /*
  * parse a character literal from yytext and return its value.
  */
-static int
+static void
 cconst(void)
 {
 	const char *s = yytext + 1;
 
 	/* s[0] == '\'' is assumed */
-	return (unescape(&s) & 07777);
+	strncpy(yylval.name, yytext, MAXNAME);
+	yylval.value = unescape(&s) & 07777 | RCONST;
+}
+
+/*
+ * parse a string constant from yytext, place it in the data area and
+ * return a pointer to it.
+ */
+static void
+sconst(void)
+{
+	const char *s = yytext + 1;
+
+	strncpy(yylval.name, "(string)", MAXNAME);
+	newdata(&yylval);
+	yylval = l2rval(&yylval);
+
+	while (*s != '"' && *s != '\0')
+		todata(unescape(&s));
+
+	/* terminate string */
+	todata(0004);
 }
 
 /*
