@@ -106,7 +106,7 @@ lstr(const struct expr *e)
 extern void
 emitl(const struct expr *e)
 {
-	return (instr(lstr(e)));
+	instr(lstr(e));
 }
 
 extern void
@@ -120,7 +120,7 @@ emitr(const struct expr *e)
 	case RDATA:
 		le = r2lval(e);
 
-		return (instr(lstr(&le)));
+		instr(lstr(&le));
 
 	default:
 		fatal(e->name, "invalid arg to %s: %06o", __func__, val(e->value));
