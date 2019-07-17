@@ -8,6 +8,16 @@
 #include "pdp8.h"
 #include "error.h"
 #include "parser.h"
+
+/*
+ * when we see function arguments, they are placed on argstack and
+ * later emitted into the function call.  This is needed to support
+ * nested function calls.
+ */
+static struct expr argstack[ARGSIZ];
+static char narg = 0;
+
+static void argpush(struct expr *e);
 %}
 
 %token	CONSTANT
@@ -245,12 +255,18 @@ extrn_list	: extrn_decl
 extrn_decl	: NAME { declare(define($1.name)); }
 		;
 
-arguments	: /* empty */
+arguments	: /* empty */ { $$.value = 0; }
 		| argument_list
 		;
 
-argument_list	: expr
-		| argument_list ',' expr
+argument_list	: expr {
+			argpush(&$1);
+			$$.value = 1;
+		}
+		| argument_list ',' expr {
+			argpush(&$3);
+			$$.value = $1.value + 1;
+		}
 		;
 
 expr		: NAME {
@@ -268,7 +284,20 @@ expr		: NAME {
 		}
 		| CONSTANT /* default action */
 		| '(' expr ')' { $$ = $2; }
-		| expr '(' arguments ')'
+		| expr '(' arguments ')' {
+			int i, arg0, argc;
+
+			argc = narg;
+			arg0 = narg - argc;
+
+			jms(&$1);
+			/* TODO: spill constants */
+			for (i = 0; i < argc; i++)
+				emitl(&argstack[arg0 + i]);
+
+			while (narg > arg0)
+				pop(argstack + (int)--narg);
+		}
 		| expr '[' expr ']' {
 			lda(&$3);
 			pop(&$3);
@@ -398,3 +427,16 @@ expr		: NAME {
 		;
 
 %%
+
+/*
+ * push e on the argument stack.  Signal an error if the
+ * stack is full.
+ */
+static void
+argpush(struct expr *e)
+{
+	if (narg >= ARGSIZ)
+		fatal(e->name, "argument stack exhausted");
+
+	argstack[(int)narg++] = *e;
+}

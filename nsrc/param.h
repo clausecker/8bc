@@ -28,6 +28,7 @@ enum {
 	DEFNSIZ = 00400,			/* definition table size */
 	DECLSIZ = 00040,			/* declaration table size */
 	DATASIZ = 01000,			/* data area size */
+	ARGSIZ  = 00040,			/* maximum number of arguments in parser */
 };
 
 /* various parameters */
