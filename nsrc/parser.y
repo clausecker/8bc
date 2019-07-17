@@ -77,10 +77,10 @@ program		: /* empty */
 definition	: define_name initializer ';'
 
 		/* vector definition */
-		| define_name '[' {
+		| define_name {
 			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
 			comment(NAMEFMT, $1.name);
-		} vector_length ']' initializer ';' {
+		} '[' vector_length ']' initializer ';' {
 			int want, have;
 
 			want = val($4.value);
@@ -160,12 +160,16 @@ param		: NAME {
 statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
 		| label ':' statement
-		| '[' statement_list ']'
+		| { $$.value = beginscope(); } '[' statement_list ']' { endscope($1.value); }
 		| IF '(' expr ')' statement %prec ELSE
 		| IF '(' expr ')' statement ELSE statement
 		| WHILE '(' expr ')' statement
 		| SWITCH '(' expr ')' statement		/* not original */
-		| GOTO expr ';'
+		| GOTO expr ';' {
+			opr(CLA);
+			jmp(&$2);
+			pop(&$2);
+		}
 		| RETURN expr ';'
 		| RETURN ';'
 		| BREAK ';'
