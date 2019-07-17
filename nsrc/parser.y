@@ -161,25 +161,61 @@ statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
 		| label ':' statement
 		| { $$.value = beginscope(); } '[' statement_list ']' { endscope($1.value); }
-		| IF '(' expr ')' statement %prec ELSE
-		| IF '(' expr ')' statement ELSE statement
-		| WHILE '(' expr ')' statement
-		| SWITCH '(' expr ')' statement		/* not original */
+		| IF if_control statement %prec ELSE {
+			opr(CLA);
+			putlabel(&$2);
+		}
+		| IF if_control statement ELSE {
+			newlabel(&$$);
+			opr(CLA);
+			jmp(&$$);
+			putlabel(&$1);
+		} statement {
+			opr(CLA);
+			putlabel(&$5);
+		}
+		| WHILE {
+			newlabel(&$$);
+			opr(CLA);
+			putlabel(&$$);
+		} if_control statement {
+			opr(CLA);
+			jmp(&$2);
+			putlabel(&$3);
+		}
+		| SWITCH '(' expr ')' statement	{ /* original: SWITCH expr statement */
+			pop(&$3);
+			error("SWITCH", "not implemented");
+		}
 		| GOTO expr ';' {
 			opr(CLA);
 			jmp(&$2);
 			pop(&$2);
 		}
-		| RETURN expr ';'
-		| RETURN ';'
-		| BREAK ';'
+		| RETURN expr ';' /* TODO */
+		| RETURN ';' /* TODO */
+		| BREAK ';' { error("BREAK", "not implemented"); }
 		| expr ';' { pop(&$1); }
 		| ';'
 		;
 
-label		: NAME
-		| CASE CONSTANT
-		| DEFAULT
+if_control	: '(' expr ')' {
+			newlabel(&$$);
+			lda(&$2);
+			pop(&$2);
+			opr(SNA);
+			jmp(&$$);
+		}
+		;
+
+label		: NAME {
+			newlabel(&$1);
+			declare(&$1);
+			opr(CLA);
+			putlabel(&$1);
+		}
+		| CASE CONSTANT { error("CASE", "not implemented"); }
+		| DEFAULT { error("DEFAULT", "not implemented"); }
 		;
 
 statement_list	: /* empty */
