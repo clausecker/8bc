@@ -6,6 +6,7 @@
 #include "param.h"
 #include "name.h"
 #include "pdp8.h"
+#include "data.h"
 #include "error.h"
 #include "parser.h"
 
@@ -285,6 +286,8 @@ expr		: NAME {
 		| CONSTANT /* default action */
 		| '(' expr ')' { $$ = $2; }
 		| expr '(' arguments ')' {
+			struct expr spill = { 0, "" };
+
 			int i, arg0, argc;
 
 			argc = narg;
@@ -293,7 +296,11 @@ expr		: NAME {
 			jms(&$1);
 			/* TODO: spill constants */
 			for (i = 0; i < argc; i++)
-				emitl(&argstack[arg0 + i]);
+				if (isconst(argstack[arg0 + i].value)) {
+					literal(&spill, val(argstack[arg0 + i].value));
+					emitl(&spill);
+				} else
+					emitl(&argstack[arg0 + i]);
 
 			while (narg > arg0)
 				pop(argstack + (int)--narg);
