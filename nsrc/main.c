@@ -8,15 +8,21 @@
 #include "asm.h"
 #include "data.h"
 #include "error.h"
+#include "name.h"
 #include "parser.h"
 
 extern int
 main(void)
 {
+	struct expr *main;
+
 	asmfile = stdout;
 
 	yyparse();
 	dumpdata();
+	main = define("MAIN");
+	label("MAIN=");
+	emitl(main);
 	instr("$\n");
 
 	if (warncnt > 0)

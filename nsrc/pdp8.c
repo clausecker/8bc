@@ -135,6 +135,12 @@ emitr(const struct expr *e)
 }
 
 extern void
+emitc(int c)
+{
+	instr("%04o", c & 07777);
+}
+
+extern void
 skip(int n)
 {
 	if (n > 0)
@@ -399,14 +405,14 @@ spill(const struct expr *e)
 	if (nframe >= NSCRATCH)
 		fatal(NULL, "frame overflow");
 
-	frametmpl[nframe++] = v;
+	frametmpl[nframe++] = v & ~LMASK;
 
 found:	r.value = MINSCRATCH + i | RVALUE | v & LMASK;
 	return (r);
 }
 
 extern void
-newframe(struct expr *fun)
+newframe(const struct expr *fun)
 {
 	newlabel(&framelabel);
 	newlabel(&stacklabel);
@@ -446,8 +452,41 @@ ret(void)
 	jmp(&retlabel);
 }
 
-extern void endframe(void)
+extern void endframe(const struct expr *fun)
 {
+	struct expr dummy = { 0, "(dummy)" };
+	int i, nsave;
+
+	/* function epilogue */
 	putlabel(&retlabel);
 	instr("LEAVE");
+	emitl(fun);
+
+	blank();
+
+	/* function metadata */
+	setlabel(&stacklabel);
+	emitc(stacksize);
+
+	putlabel(&framelabel);
+	emitc(nparam);
+	nsave = nframe + stacksize;
+	emitc(nsave);
+	emitc(nframe);
+
+	/* parameter and save area */
+	skip(nparam);
+	skip(nsave);
+
+	/* frame template */
+	for (i = 0; i < nframe; i++) {
+		dummy.value = frametmpl[i];
+		emitr(&dummy);
+	}
+
+	/* automatic variable area */
+	if (nauto > 0) {
+		putlabel(&autolabel);
+		skip(nauto);
+	}
 }

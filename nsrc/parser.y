@@ -84,11 +84,9 @@ program		: /* empty */
 		| program definition { blank(); }
 		;
 
-		/* simple definition */
 definition	: define_name initializer ';'
-
-		/* vector definition */
-		| define_name {
+		| define_name { newframe(&$1); } '(' parameters ')' statement { endframe(&$1); }
+		| define_name { /* vector definition */
 			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
 			comment(NAMEFMT, $1.name);
 		} '[' vector_length ']' initializer ';' {
@@ -101,12 +99,6 @@ definition	: define_name initializer ';'
 				skip(want - have);
 			else if (want == 0)
 				warn($1.name, "zero length vector");
-		}
-
-		/* function definition */
-		| define_name { newframe(&$1); } '(' parameters ')' statement {
-			/* TODO: emit return */
-			endframe();
 		}
 		;
 

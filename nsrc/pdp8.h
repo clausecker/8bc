@@ -139,11 +139,15 @@ extern void opr(int);
  *     be of type LCONST, RVALUE, LLABEL, LDATA, RSTACK, LAUTO, or
  *     LPARAM.
  *
+ * emitc(c)
+ *     Emit the value of the constant c.
+ *
  * skip(int)
  *     Skip that many memory locations.
  */
 extern void emitr(const struct expr *);
 extern void emitl(const struct expr *);
+extern void emitc(int);
 extern void skip(int);
 
 /*
@@ -196,13 +200,23 @@ extern struct expr l2rval(const struct expr *);
  *     Generate code to return from the current function.  The return
  *     value is whatever is currently in AC.
  *
- * endframe()
- *     End the current call frame and emit the required data.
+ * endframe(expr)
+ *     End the current call frame and emit the required data.  expr must
+ *     be the label corresponding to the beginning of the current
+ *     function.  The data looks like this:
+ *
+ *         number of arguments
+ *         number of registers to save
+ *         number of template registers to load
+ *         argument storage area
+ *         saved registers area
+ *         frame template
+ *         automatic variable area
  */
 extern void push(struct expr *);
 extern void pop(struct expr *);
-extern void newframe(struct expr *);
+extern void newframe(const struct expr *);
 extern void newparam(struct expr *);
 extern void newauto(struct expr *);
 extern void ret(void);
-extern void endframe(void);
+extern void endframe(const struct expr *);
