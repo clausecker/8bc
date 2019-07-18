@@ -23,7 +23,8 @@ main(void)
 	main = define("MAIN");
 	label("MAIN=");
 	emitl(main);
-	instr("$\n");
+	instr("$");
+	endline();
 
 	if (warncnt > 0)
 		fprintf(stderr, "%d warnings\n", warncnt);
