@@ -88,16 +88,16 @@ lstr(const struct expr *e)
 		sprintf(buf, "L%04o+%03o", val(stacklabel.value), val(v));
 		break;
 
-	case RAUTO:
+	case LAUTO:
 		sprintf(buf, "L%04o+%03o", val(autolabel.value), val(v));
 		break;
 
-	case RPARAM:
+	case LPARAM:
 		sprintf(buf, "L%04o+%03o", val(framelabel.value), val(v) + 2);
 		break;
 
 	default:
-		fatal(e->name, "invalid arg to %s: %06o", __func__, val(v));
+		fatal(e->name, "invalid arg to %s: %06o", __func__, v);
 	}
 
 	return (buf);
@@ -123,7 +123,7 @@ emitr(const struct expr *e)
 		instr(lstr(&le));
 
 	default:
-		fatal(e->name, "invalid arg to %s: %06o", __func__, val(e->value));
+		fatal(e->name, "invalid arg to %s: %06o", __func__, e->value);
 	}
 }
 
@@ -353,9 +353,8 @@ pop(struct expr *e)
 
 /*
  * Allocate a frame register for expr and return it.  If expr is
- * of type RVALUE, LVALUE, RSTACK, LSTACK, RPARAM, LPARAM, RAUTO, or
- * LAUTO, return it unchanged.  Otherwise the result always has type
- * RVALUE or LVALUE.
+ * of type RVALUE, LVALUE, RSTACK, or LSTACK,  return it unchanged.
+ * Otherwise the result always has type RVALUE or LVALUE.
  */
 static struct expr
 spill(const struct expr *e)
@@ -366,12 +365,8 @@ spill(const struct expr *e)
 	switch (class(v)) {
 	case RVALUE:
 	case LVALUE:
-	case RPARAM:
-	case LPARAM:
 	case RSTACK:
 	case LSTACK:
-	case RAUTO:
-	case LAUTO:
 		r = *e;
 		return (r);
 
