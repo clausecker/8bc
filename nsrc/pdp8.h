@@ -137,7 +137,9 @@ extern void opr(int);
  * emitl(expr)
  *     Emits the address of expr into the instruction stream.  expr can
  *     be of type LCONST, RVALUE, LLABEL, LDATA, RSTACK, LAUTO, or
- *     LPARAM.
+ *     LPARAM.  Additionally, if expr is of type RCONST, RLABEL, RDATA,
+ *     RAUTO, or RPARAM, it is spilled to the data area and the offset
+ *     into the data area is printed.
  *
  * emitc(c)
  *     Emit the value of the constant c.

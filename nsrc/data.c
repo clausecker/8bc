@@ -19,7 +19,7 @@ todata(int c)
 	if (here >= DATASIZ)
 		fatal(NULL, "data area full");
 
-	data[here++] = c & 07777;
+	data[here++] = c;
 }
 
 extern void
@@ -29,18 +29,16 @@ newdata(struct expr *e)
 }
 
 extern void
-literal(struct expr *e, int c)
+literal(struct expr *e, const struct expr *c)
 {
 	int i;
 
-	c &= 07777;
-
 	for (i = 0; i < here; i++)
-		if (data[i] == c)
+		if (data[i] == c->value)
 			goto found;
 
 	/* not found */
-	todata(c);
+	todata(c->value);
 
 found:	e->value = i | LDATA;
 }
@@ -48,6 +46,7 @@ found:	e->value = i | LDATA;
 extern void
 dumpdata(void)
 {
+	struct expr dummy = { 0, "(dummy)" };
 	size_t i;
 
 	/* don't dump data if there is none */
@@ -56,8 +55,10 @@ dumpdata(void)
 
 	label("DATA,");
 
-	for (i = 0; i < here; i++)
-		emitc(data[i]);
+	for (i = 0; i < here; i++) {
+		dummy.value = data[i];
+		emitr(&dummy);
+	}
 
 	blank();
 }

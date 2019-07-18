@@ -166,10 +166,10 @@ sconst(void)
 	yylval = l2rval(&yylval);
 
 	while (*s != '"' && *s != '\0')
-		todata(unescape(&s));
+		todata(RCONST | unescape(&s));
 
 	/* terminate string */
-	todata(0004);
+	todata(RCONST | 0004);
 }
 
 /*

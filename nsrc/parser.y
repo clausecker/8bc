@@ -282,8 +282,6 @@ expr		: NAME {
 		| CONSTANT /* default action */
 		| '(' expr ')' { $$ = $2; }
 		| expr '(' arguments ')' {
-			struct expr spill = { 0, "" };
-
 			int i, arg0, argc;
 
 			argc = narg;
@@ -292,11 +290,7 @@ expr		: NAME {
 			jms(&$1);
 			/* TODO: spill constants */
 			for (i = 0; i < argc; i++)
-				if (isconst(argstack[arg0 + i].value)) {
-					literal(&spill, val(argstack[arg0 + i].value));
-					emitl(&spill);
-				} else
-					emitl(&argstack[arg0 + i]);
+				emitl(&argstack[arg0 + i]);
 
 			while (narg > arg0)
 				pop(argstack + (int)--narg);

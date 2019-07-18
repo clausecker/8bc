@@ -7,6 +7,7 @@
 #include "asm.h"
 #include "error.h"
 #include "pdp8.h"
+#include "data.h"
 #include "name.h"
 
 /*
@@ -110,6 +111,24 @@ lstr(const struct expr *e)
 extern void
 emitl(const struct expr *e)
 {
+	struct expr spill = { 0, "(spill)" };
+
+	switch (class(e->value)) {
+	/* spill needed to construct address */
+	case RCONST:
+	case RLABEL:
+	case RDATA:
+	case RAUTO:
+	case RPARAM:
+		literal(&spill, e);
+		e = &spill;
+		break;
+
+	/* no spill needed */
+	default:
+		;
+	}
+
 	instr(lstr(e));
 }
 
