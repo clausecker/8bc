@@ -147,7 +147,11 @@ arg(const struct expr *e)
 	static char buf[16];
 
 	sp = spill(e);
-	sprintf(buf, "%s%s", islval(sp.value) ? "I " : "", lstr(&sp));
+	if (islval(sp.value)) {
+		sp = l2rval(&sp);
+		sprintf(buf, "I %s", lstr(&sp));
+	} else
+		strcpy(buf, lstr(&sp));
 
 	return (buf);
 }
@@ -402,8 +406,6 @@ found:	r.value = MINSCRATCH + i | RVALUE | v & LMASK;
 extern void
 newframe(struct expr *fun)
 {
-	struct expr zero = { 0, "" };
-
 	newlabel(&framelabel);
 	newlabel(&stacklabel);
 	newlabel(&autolabel);
@@ -417,7 +419,7 @@ newframe(struct expr *fun)
 	endscope(0);
 
 	/* function prologue */
-	emitr(&zero);
+	skip(1);
 	instr("ENTER");
 	emitl(&framelabel);
 }
