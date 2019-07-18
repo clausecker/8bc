@@ -189,8 +189,12 @@ extern struct expr l2rval(const struct expr *);
  *     left to right.
  *
  * newauto(expr)
- *    Remembers expr as a new automatic variable and update expr->value
- *    appropriately.
+ *     Remembers expr as a new automatic variable and update expr->value
+ *     appropriately.
+ *
+ * ret()
+ *     Generate code to return from the current function.  The return
+ *     value is whatever is currently in AC.
  *
  * endframe()
  *     End the current call frame and emit the required data.
@@ -200,4 +204,5 @@ extern void pop(struct expr *);
 extern void newframe(struct expr *);
 extern void newparam(struct expr *);
 extern void newauto(struct expr *);
+extern void ret(void);
 extern void endframe(void);

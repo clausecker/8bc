@@ -203,8 +203,12 @@ statement	: AUTO auto_list ';' statement
 			jmp(&$2);
 			pop(&$2);
 		}
-		| RETURN expr ';' /* TODO */
-		| RETURN ';' /* TODO */
+		| RETURN expr ';' {
+			lda(&$2);
+			pop(&$2);
+			ret();
+		}
+		| RETURN ';' { ret(); }
 		| BREAK ';' { error("BREAK", "not implemented"); }
 		| expr ';' { pop(&$1); }
 		| ';'

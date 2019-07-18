@@ -20,10 +20,14 @@
  *
  * autolabel
  *     beginning of the automatic variable area
+ *
+ * retlabel
+ *     points to the current function's leave instruction
  */
 static struct expr framelabel = { 0, "(frame)" };
 static struct expr stacklabel = { 0, "(stack)" };
 static struct expr autolabel = { 0, "(auto)" };
+static struct expr retlabel = { 0, "(return)" };
 
 /*
  * Stack variables.
@@ -407,6 +411,7 @@ newframe(struct expr *fun)
 	newlabel(&framelabel);
 	newlabel(&stacklabel);
 	newlabel(&autolabel);
+	newlabel(&retlabel);
 
 	tos = -1;
 	stacksize = 0;
@@ -434,8 +439,14 @@ newauto(struct expr *var)
 	var->value = LAUTO | nauto++;
 }
 
+extern void
+ret(void)
+{
+	jmp(&retlabel);
+}
+
 extern void endframe(void)
 {
-	/* TODO */
+	putlabel(&retlabel);
 	instr("LEAVE");
 }
