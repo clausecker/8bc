@@ -111,10 +111,10 @@ ESC	\*[0et*'"n]
 				return (NAME);
 			}
 
-[[:space:]]		/* ignore white space */
+[[:space:]]		; /* ignore white space */
 
 [!-^]			return (yytext[0]);
-[`a-z{|}~]		return (yytext[0] - 040);	/* convert to 6 bit ASCII */
+[`a-z{|}~]		return (yytext[0] - 040); /* convert to 6 bit ASCII */
 
 .			error(NULL, "stray %03o", (unsigned char)yytext[0]);
 
