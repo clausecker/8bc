@@ -423,6 +423,7 @@ newframe(struct expr *fun)
 
 	/* function prologue */
 	skip(1);
+	comment(NAMEFMT, fun->name);
 	instr("ENTER");
 	emitl(&framelabel);
 }
