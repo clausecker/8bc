@@ -132,12 +132,12 @@ extern void opr(int);
  *
  * emitr(expr)
  *     Emits the value of expr into the instruction stream.  expr must
- *     be of type RCONST or RLABEL, RDATA.
+ *     be of type RCONST, RLABEL, RDATA, RAUTO, or RPARAM.
  *
  * emitl(expr)
  *     Emits the address of expr into the instruction stream.  expr can
- *     be of type LCONST, RVALUE, LLABEL, LDATA, RSTACK, RAUTO, or
- *     RPARAM.
+ *     be of type LCONST, RVALUE, LLABEL, LDATA, RSTACK, LAUTO, or
+ *     LPARAM.
  *
  * skip(int)
  *     Skip that many memory locations.

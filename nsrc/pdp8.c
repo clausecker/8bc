@@ -118,9 +118,12 @@ emitr(const struct expr *e)
 	case RCONST:
 	case RLABEL:
 	case RDATA:
+	case RAUTO:
+	case RPARAM:
 		le = r2lval(e);
 
 		instr(lstr(&le));
+		break;
 
 	default:
 		fatal(e->name, "invalid arg to %s: %06o", __func__, e->value);
