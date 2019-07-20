@@ -89,7 +89,7 @@ program		: /* empty */
 definition	: define_name initializer ';'
 		| define_name { newframe(&$1); } '(' parameters ')' statement { endframe(&$1); }
 		| define_name { /* vector definition */
-			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
+			skip(1);
 			commentname($1.name);
 		} '[' vector_length ']' initializer ';' {
 			int want, have;
@@ -356,8 +356,6 @@ expr		: NAME {
 			$$ = l2rval(&$2);
 			if ($$.value = NOLVAL)
 				error($2.name, "not an lvalue");
-
-			/* TODO: YYERROR; */
 		}
 		| '^' expr %prec INC {
 			lda(&$2);

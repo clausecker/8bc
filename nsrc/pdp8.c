@@ -211,36 +211,42 @@ extern void
 and(const struct expr *e)
 {
 	instr("AND %s", arg(e));
+	commentname(e->name);
 }
 
 extern void
 tad(const struct expr *e)
 {
 	instr("TAD %s", arg(e));
+	commentname(e->name);
 }
 
 extern void
 isz(const struct expr *e)
 {
 	instr("ISZ %s", arg(e));
+	commentname(e->name);
 }
 
 extern void
 dca(const struct expr *e)
 {
 	instr("DCA %s", arg(e));
+	commentname(e->name);
 }
 
 extern void
 jms(const struct expr *e)
 {
 	instr("JMS %s", arg(e));
+	commentname(e->name);
 }
 
 extern void
 jmp(const struct expr *e)
 {
 	instr("JMP %s", arg(e));
+	commentname(e->name);
 }
 
 extern void

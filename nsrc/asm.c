@@ -160,7 +160,7 @@ opr1(char *buf, int op)
 	strcat(buf, suffix);
 
 	/* can't have RAL and RAR set at the same time */
-	if (op & (RAL | RAR) == (RAL | RAR))
+	if ((op & (RAL | RAR)) == (RAL | RAR))
 		return (0);
 
 	/* inspect RAL, RAR, and BSW */
