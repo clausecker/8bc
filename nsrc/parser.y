@@ -19,6 +19,9 @@ static struct expr argstack[ARGSIZ];
 static char narg = 0;
 
 static void argpush(struct expr *e);
+static void docmp(struct expr *, struct expr *, struct expr *, int);
+static void doascmp(struct expr *, struct expr *, struct expr *, int);
+static void door(struct expr *q, struct expr *a, struct expr *b, int op, int as);
 %}
 
 %token	CONSTANT
@@ -384,7 +387,13 @@ expr		: NAME {
 			pop(&$1);
 			push(&$$);
 		}
-		| expr ASADD expr /* TODO */
+		| expr ASADD expr {
+			lda(&$3);
+			pop(&$3);
+			tad(&$1);
+			dca(&$1);
+			$$ = $1;
+		}
 		| expr '-' expr {
 			lda(&$3);
 			pop(&$3);
@@ -393,30 +402,60 @@ expr		: NAME {
 			pop(&$1);
 			push(&$$);
 		}
-		| expr ASSUB expr /* TODO */
+		| expr ASSUB expr {
+			lda(&$3);
+			pop(&$3);
+			opr(CIA);
+			tad(&$1);
+			dca(&$1);
+			$$ = $1;
+		}
 		| expr SHL expr /* TODO */
 		| expr ASSHL expr /* TODO */
 		| expr SHR expr /* TODO */
 		| expr ASSHR expr /* TODO */
-		| expr '<' expr /* TODO */
-		| expr ASLT expr /* TODO */
-		| expr '>' expr /* TODO */
-		| expr ASGT expr /* TODO */
-		| expr LE expr /* TODO */
-		| expr ASLE expr /* TODO */
-		| expr GE expr /* TODO */
-		| expr ASGE expr /* TODO */
-		| expr EQ expr /* TODO */
-		| expr ASEQ expr /* TODO */
-		| expr NE expr /* TODO */
-		| expr ASNE expr /* TODO */
-		| expr '&' expr /* TODO */
-		| expr ASAND expr /* TODO */
-		| expr '^' expr /* TODO */
-		| expr ASXOR expr /* TODO */
-		| expr '\\' expr /* TODO */
-		| expr ASOR expr /* TODO */
-		| expr '?' expr ':' expr /* TODO */
+		| expr '<' expr { docmp(&$$, &$1, &$3, SZL); }
+		| expr ASLT expr { doascmp(&$$, &$1, &$3, SZL); }
+		| expr '>' expr { docmp(&$$, &$1, &$3, SNL | SZA); }
+		| expr ASGT expr { doascmp(&$$, &$1, &$3, SNL | SZA); }
+		| expr LE expr { docmp(&$$, &$1, &$3, SZL | SNA); }
+		| expr ASLE expr { doascmp(&$$, &$1, &$3, SNA); }
+		| expr GE expr { docmp(&$$, &$1, &$3, SNL); }
+		| expr ASGE expr { doascmp(&$$, &$1, &$3, SNL); }
+		| expr EQ expr { docmp(&$$, &$1, &$3, SNA); }
+		| expr ASEQ expr { doascmp(&$$, &$1, &$3, SNA); }
+		| expr NE expr { docmp(&$$, &$1, &$3, SZA); }
+		| expr ASNE expr { doascmp(&$$, &$1, &$3, SZA); }
+		| expr '&' expr {
+			lda(&$3);
+			pop(&$3);
+			and(&$1);
+			pop(&$1);
+			push(&$$);
+		}
+		| expr ASAND expr {
+			lda(&$3);
+			pop(&$3);
+			and(&$1);
+			dca(&$1);
+			$$ = $1;
+		}
+		| expr '^' expr { door(&$$, &$1, &$3, CMA | STL | RAL | IAC, 0); }
+		| expr ASXOR expr { door(&$$, &$1, &$3, CMA | STL | RAL | IAC, 1); }
+		| expr '\\' expr { door(&$$, &$1, &$3, CIA, 0); }
+		| expr ASOR expr { door(&$$, &$1, &$3, CIA, 1); }
+		| expr '?' expr ':' expr {
+			opr(STA);
+			tad(&$1); /* L = $1 != 0 */
+			pop(&$1);
+			opr(SNL | CLA);
+			tad(&$5); /* won't set L */
+			pop(&$5);
+			opr(SZL); /* L is only set if $1 == 0 */
+			tad(&$3);
+			pop(&$3);
+			push(&$$);
+		}
 		| expr '=' expr {
 			lda(&$3);
 			pop(&$3);
@@ -445,4 +484,66 @@ argpush(struct expr *e)
 	}
 
 	argstack[(int)narg++] = *e;
+}
+
+/*
+ * Perform a comparison of a and b by predicate p and store the
+ * result in q.  Pop both a and b.
+ */
+static void
+docmp(struct expr *q, struct expr *a, struct expr *b, int p)
+{
+	lda(b);
+	pop(b);
+	opr(CIA);
+	tad(a);
+	pop(a);
+	opr(p | CLA);
+	opr(CLA | IAC);
+	push(q);
+}
+
+/*
+ * Perform a comparison of a and b by predicate p and deposit the
+ * result in a.  Pop b and copy a to q.
+ */
+static void
+doascmp(struct expr *q, struct expr *a, struct expr *b, int p)
+{
+	lda(b);
+	pop(b);
+	opr(CIA);
+	tad(a);
+	opr(p | CLA);
+	opr(CLA | IAC);
+	dca(a);
+	*q = *a;
+}
+
+/*
+ * Perform a bitwise or or xor of a and b.  If as is clear, pop both
+ * a and b and store the result to q.  If as is set, pop only a, store
+ * the result to b and copy a to q.
+ *
+ * If op is CIA, this performs an inclusive or by computing
+ * a + b - (a & b).  If op is CMA | STL | RAL | IAC, this computes an
+ * exclusive or by computing a + b - 2 * (a & b);
+ */
+static void
+door(struct expr *q, struct expr *a, struct expr *b, int op, int as)
+{
+	/* compute $1 + $3 - ($1 & $3) */
+	lda(b);
+	and(a);
+	opr(op);
+	tad(b);
+	pop(b);
+	tad(a);
+	if (as) {
+		dca(a);
+		*q = *a;
+	} else {
+		pop(a);
+		push(q);
+	}
 }
