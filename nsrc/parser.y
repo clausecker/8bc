@@ -305,19 +305,19 @@ expr		: NAME {
 			$$ = r2lval(&$$);
 		}
 		| expr INC {
-			lda(&$2);
-			isz(&$2);
+			lda(&$1);
+			isz(&$1);
 			opr(NOP);
-			pop(&$2);
+			pop(&$1);
 			push(&$$);
 		}
 		| expr DEC {
 			opr(STA);
-			tad(&$2);
-			dca(&$2);
-			lda(&$2);
+			tad(&$1);
+			dca(&$1);
+			lda(&$1);
 			opr(IAC);
-			pop(&$2);
+			pop(&$1);
 			push(&$$);
 		}
 		| INC expr {
