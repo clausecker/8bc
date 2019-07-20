@@ -123,98 +123,112 @@ skip(int n)
 }
 
 /*
- * Emit a group 1 microcoded instruction.  Up to four instructions may
- * be emitted:
+ * Generate a group 1 microcoded instruction.  Up to four instructions
+ * may be emitted:
  *
  * one of CLA CMA STA
  * one of CLL CML bSTL
  * one of RAR RAL BSW RTR RTL
  * finally, IAC
  *
- * if no bit is set, a NOP is emitted.  It is assumed that op refers to
- * a group 1 microcoded instruction.
+ * It is assumed that op refers to a group 1 microcoded instruction.
+ * Return 1 on success, 0 if op has an unsupported combination of bits
+ * set.
  */
-static void
-opr1(int op)
+static int
+opr1(char *buf, int op)
 {
-	static char buf[4 * 4 + 1];
-
-	buf[0] = '\0';
+	const char *suffix;
+	static const char rots[6][4] = { "", "BSW ", "RAL ", "RTL ", "RAR ", "RTR " };
 
 	switch (op & (CLA | CMA)) {
-	case CLA: strcpy(buf, " CLA"); break;
-	case CMA: strcpy(buf, " CMA"); break;
-	case STA: strcpy(buf, " STA"); break;
+	case CLA: suffix = "CLA "; break;
+	case CMA: suffix = "CMA "; break;
+	case STA: suffix = "STA "; break;
+	default:  suffix = "";
 	}
+
+	strcpy(buf, suffix);
 
 	switch (op & (CLL | CML)) {
-	case CLL: strcat(buf, " CLL"); break;
-	case CML: strcat(buf, " CML"); break;
-	case STL: strcat(buf, " STL"); break;
+	case CLA: suffix = "CLL "; break;
+	case CMA: suffix = "CML "; break;
+	case STA: suffix = "STL "; break;
+	default:  suffix = "";
 	}
 
-	switch (op & (RAR | RAL | BSW)) {
-	case OPR1: break;
-	case RAR: strcat(buf, " RAR"); break;
-	case RAL: strcat(buf, " RAL"); break;
-	case BSW: strcat(buf, " BSW"); break;
-	case RTR: strcat(buf, " RTR"); break;
-	case RTL: strcat(buf, " RTL"); break;
+	strcat(buf, suffix);
 
-	default:
-		fatal(NULL, "invalid OPR instruction %04o", op);
-	}
+	/* can't have RAL and RAR set at the same time */
+	if (op & (RAL | RAR) == (RAL | RAR))
+		return (0);
+
+	/* inspect RAL, RAR, and BSW */
+	strncat(buf, rots[op >> 1 & 7], 4);
 
 	if ((op & IAC) == IAC)
-		strcat(buf, " IAC");
+		strcat(buf, "IAC ");
 
-	instr(buf[0] == '\0' ? "NOP" : buf + 1);
+	return (1);
 }
 
 /*
- * Emit a group 2 microcoded instruction.  Up to four instructions may
- * be emitted:
+ * Generate a group 2 microcoded instruction.  Up to four instructions
+ * may be generated:
  *
- *       any of SMA SZA SNL
- * or up any of SPA SNA SZL
+ *    any of SMA SZA SNL
+ * or any of SPA SNA SZL
  * and a CLA.
  *
- * If none of the bits are set, a NOP is emitted.  It is assumed that
- * op refers to a group 2 microcoded instruction.
+ * It is assumed that op refers to a group 2 microcoded instruction.
+ * Return 1 on success, 0 if op has an unsupported combination of bits
+ * set.
  */
-static void
-opr2(int op)
+static int
+opr2(char *buf, int op)
 {
-	static const char mnemo[2][3][5] = { " SNL", " SZA", " SMA", " SZL", " SNA", " SPA" };
-	static char buf[4 * 4 + 1];
+	static const char mnemo[2][3][4] = { "SNL ", "SZA ", "SMA ", "SZL ", "SNA ", "SPA " };
 	int i, skip;
 
-	buf[0] = '\0';
 	skip = (op & SKP) == SKP;
 
 	for (i = 0; i < 3; i++)
 		if (op & 00020 << i)
-			strcat(buf, mnemo[skip][i]);
+			strncat(buf, mnemo[skip][i], 4);
 
 	if ((op & CLA) == CLA)
-		strcat(buf, " CLA");
+		strcat(buf, "CLA ");
 
-	instr(buf[0] == '\0' ? "NOP" : buf + 1);
+	return (1);
 }
 
 extern void
 emitopr(int op)
 {
+	char buf[4 * 4 + 1];
+	int succeeded = 1;
+
+	op &= 07777;
+	buf[0] = '\0';
+
 	if ((op & OPR1) != OPR1)
-		goto inval; /* not an OPR instruction */
+		succeeded = 0;  /* not an OPR instruction */
 	else if ((op & 00400) == 0)
-		opr1(op);   /* OPR group 1 */
+		succeeded = opr1(buf, op);   /* OPR group 1 */
 	else if ((op & 00007) == 0)
-		opr2(op);   /* OPR group 2 */
+		succeeded = opr2(buf, op);   /* OPR group 2 */
 	else
-		goto inval; /* OPR group 3 or privileged */
+		succeeded = 0;  /* OPR group 3 or privileged */
 
-	return;
+	if (succeeded) {
+		if (buf[0] == '\0')
+			strcpy(buf, "NOP");
+		else	/* trim trailing whitespace */
+			buf[strlen(buf) - 1] = '\0';
+	} else {
+		sprintf(buf, "%04o", op);
+		warn(buf, "invalid OPR instruction");
+	}
 
-inval:	fatal(NULL, "invalid arg to %s: %06o", __func__, op);
+	instr(buf);
 }
