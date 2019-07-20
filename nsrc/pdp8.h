@@ -207,11 +207,11 @@ extern struct expr l2rval(const struct expr *);
  *     be the label corresponding to the beginning of the current
  *     function.  The data looks like this:
  *
- *         number of arguments
- *         number of registers to save
- *         number of template registers to load
- *         argument storage area
+ *         number of registers to save, complemented
  *         saved registers area
+ *         number of arguments, complemented
+ *         argument storage area
+ *         number of template registers to load, complemented
  *         frame template
  *         automatic variable area
  */

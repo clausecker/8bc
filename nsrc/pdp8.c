@@ -14,7 +14,10 @@
  * Labels related to the current function.
  *
  * framelabel
- *     beginning of the frame record
+ *     call frame area
+ *
+ * paramlabel
+ *     beginning of the parameter area
  *
  * stacklabel
  *     first register on the stack
@@ -26,6 +29,7 @@
  *     points to the current function's leave instruction
  */
 static struct expr framelabel = { 0, "(frame)" };
+static struct expr paramlabel = { 0, "(param)" };
 static struct expr stacklabel = { 0, "(stack)" };
 static struct expr autolabel = { 0, "(auto)" };
 static struct expr retlabel = { 0, "(return)" };
@@ -98,7 +102,7 @@ lstr(const struct expr *e)
 		break;
 
 	case LPARAM:
-		sprintf(buf, "L%04o+%03o", val(framelabel.value), val(v) + 2);
+		sprintf(buf, "L%04o+%03o", val(paramlabel.value), val(v));
 		break;
 
 	default:
@@ -434,6 +438,7 @@ extern void
 newframe(const struct expr *fun)
 {
 	newlabel(&framelabel);
+	newlabel(&paramlabel);
 	newlabel(&stacklabel);
 	newlabel(&autolabel);
 	newlabel(&retlabel);
@@ -488,16 +493,21 @@ extern void endframe(const struct expr *fun)
 	emitc(stacksize);
 
 	putlabel(&framelabel);
-	emitc(nparam);
-	nsave = nframe + stacksize;
-	emitc(nsave);
-	emitc(nframe);
 
-	/* parameter and save area */
-	skip(nparam);
+	/* saved registes area */
+	nsave = nframe + stacksize;
+	emitc(~nsave);
+	comment("SAVE %04o REGISTERS", nsave);
 	skip(nsave);
 
+	/* parameter area */
+	emitc(~nparam);
+	comment("LOAD %04o ARGUMENTS", nparam);
+	skip(nparam);
+
 	/* frame template */
+	emitc(~nframe);
+	comment("LOAD %04o TEMPLATES", nframe);
 	for (i = 0; i < nframe; i++) {
 		dummy.value = frametmpl[i];
 		emitr(&dummy);
