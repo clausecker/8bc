@@ -252,6 +252,7 @@ extrn_list	: extrn_decl
 extrn_decl	: NAME { declare(define($1.name)); }
 		;
 
+		/* $$.value is the number of arguments */
 arguments	: /* empty */ { $$.value = 0; }
 		| argument_list
 		;
@@ -284,11 +285,10 @@ expr		: NAME {
 		| expr '(' arguments ')' {
 			int i, arg0, argc;
 
-			argc = narg;
-			arg0 = narg - argc;
-
 			jms(&$1);
-			/* TODO: spill constants */
+
+			argc = $3.value;
+			arg0 = narg - argc;
 			for (i = 0; i < argc; i++)
 				emitl(&argstack[arg0 + i]);
 
