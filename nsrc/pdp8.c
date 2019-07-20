@@ -421,7 +421,7 @@ spill(const struct expr *e)
 
 	/* was v spilled before? */
 	for (i = 0; i < nframe; i++)
-		if (frametmpl[i] == v)
+		if (frametmpl[i] == (v & ~LMASK))
 			goto found;
 
 	/* not found */
@@ -490,7 +490,7 @@ extern void endframe(const struct expr *fun)
 
 	/* function metadata */
 	setlabel(&stacklabel);
-	emitc(stacksize);
+	emitc(nframe + MINSCRATCH);
 
 	putlabel(&framelabel);
 
