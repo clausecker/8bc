@@ -91,7 +91,7 @@ definition	: define_name initializer ';'
 		| define_name { newframe(&$1); } '(' parameters ')' statement { endframe(&$1); }
 		| define_name { /* vector definition */
 			instr(".+1"); /* TODO: perhaps add this to pdp8.h */
-			comment(NAMEFMT, $1.name);
+			commentname($1.name);
 		} '[' vector_length ']' initializer ';' {
 			int want, have;
 
@@ -125,7 +125,7 @@ define_name	: NAME {
 initializer	: /* empty */ {
 			skip(1);
 			if ($0.value != TOKEN)
-				comment(NAMEFMT, $0.name);
+				commentname($0.name);
 
 			$$.value = 0;
 		}
@@ -134,7 +134,7 @@ initializer	: /* empty */ {
 
 ival_list	: ival {
 			if ($0.value != TOKEN)
-				comment(NAMEFMT, $0.name);
+				commentname($0.name);
 
 			$$.value = 1;
 		}

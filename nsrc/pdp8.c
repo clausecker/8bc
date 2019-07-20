@@ -349,7 +349,7 @@ newframe(const struct expr *fun)
 
 	/* function prologue */
 	emitc(0);
-	comment(NAMEFMT, fun->name);
+	commentname(fun->name);
 	instr("ENTER");
 	emitl(&framelabel);
 }
