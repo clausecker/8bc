@@ -21,6 +21,7 @@ static void argpush(struct expr *e);
 static void docmp(struct expr *, struct expr *, struct expr *, int);
 static void doascmp(struct expr *, struct expr *, struct expr *, int);
 static void door(struct expr *q, struct expr *a, struct expr *b, int op, int as);
+static void doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as);
 %}
 
 %token	CONSTANT
@@ -406,10 +407,10 @@ expr		: NAME {
 			dca(&$1);
 			$$ = $1;
 		}
-		| expr SHL expr /* TODO */
-		| expr ASSHL expr /* TODO */
-		| expr SHR expr /* TODO */
-		| expr ASSHR expr /* TODO */
+		| expr SHL expr { doshift(&$$, &$1, &$3, RAL, 0); }
+		| expr ASSHL expr { doshift(&$$, &$1, &$3, RAL, 1); }
+		| expr SHR expr { doshift(&$$, &$1, &$3, RAR, 0); }
+		| expr ASSHR expr { doshift(&$$, &$1, &$3, RAR, 1); }
 		| expr '<' expr { docmp(&$$, &$1, &$3, SZL); }
 		| expr ASLT expr { doascmp(&$$, &$1, &$3, SZL); }
 		| expr '>' expr { docmp(&$$, &$1, &$3, SNL | SZA); }
@@ -542,4 +543,48 @@ door(struct expr *q, struct expr *a, struct expr *b, int op, int as)
 		pop(a);
 		push(q);
 	}
+}
+
+/*
+ * Perform a bitshift of a by b.  If as is clear, pop both a an d b and
+ * store the result to q.  If as is set, pop only a, store the result to
+ * b and copy a to q.
+ *
+ * If op is RAL, this performs a left shift.  If op is RAR, this
+ * instead performs a right shift.
+ */
+static void
+doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as)
+{
+	struct expr again = { 0, "" }, end = { 0, "" }, counter;
+
+	/*
+	 * the loop goes like this:
+	 *
+	 * counter = ~b
+	 * while (++counter)
+	 *     a << = 1;
+	 */
+	newlabel(&again);
+	newlabel(&end);
+
+	lda(b);
+	pop(b);
+	opr(CMA);
+	push(&counter);
+	lda(a);
+	if (!as)
+		pop(a);
+	jmp(&end);
+	putlabel(&again);
+	opr(CLL | op);
+	putlabel(&end);
+	isz(&counter);
+	jmp(&again);
+	pop(&counter);
+	if (as) {
+		dca(a);
+		*q = *a;
+	} else
+		push(q);
 }
