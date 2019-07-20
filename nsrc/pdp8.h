@@ -140,17 +140,9 @@ extern void opr(int);
  *     LPARAM.  Additionally, if expr is of type RCONST, RLABEL, RDATA,
  *     RAUTO, or RPARAM, it is spilled to the data area and the offset
  *     into the data area is printed.
- *
- * emitc(c)
- *     Emit the value of the constant c.
- *
- * skip(int)
- *     Skip that many memory locations.
  */
 extern void emitr(const struct expr *);
 extern void emitl(const struct expr *);
-extern void emitc(int);
-extern void skip(int);
 
 /*
  * lvalues and rvalues.

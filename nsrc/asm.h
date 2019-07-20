@@ -22,3 +22,26 @@ extern void label(const char *fmt, ...);
 extern void instr(const char *fmt, ...);
 extern void comment(const char *fmt, ...);
 extern void blank(void), endline(void);
+
+/*
+ * High-level functions.
+ *
+ * emitc(c)
+ *     Emit the octal representation of c.
+ *
+ * skip(n)
+ *     If n is nonzero, emit a request to skip n words.
+ *
+ * emitopr(op)
+ *     Decode the OPR instruction in the argument and emit it into the
+ *     instruction field.  If op is not a valid OPR instruction, print
+ *     a warning and emit the octal value of op.
+ *
+ * commentname(name)
+ *     If name is not an empty string, print a comment for name using
+ *     NAMEFMT.
+ */
+extern void emitc(int);
+extern void skip(int);
+extern void emitopr(int);
+extern void commentname(const char *);
