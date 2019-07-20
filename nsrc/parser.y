@@ -1,5 +1,4 @@
 %{
-#include <assert.h>
 #include <stdio.h>
 
 #include "asm.h"
@@ -306,7 +305,6 @@ expr		: NAME {
 			tad(&$1);
 			pop(&$1);
 			push(&$$);
-			assert(isrval($$.value));
 			$$ = r2lval(&$$);
 		}
 		| expr INC {
