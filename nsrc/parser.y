@@ -212,7 +212,7 @@ if_control	: '(' expr ')' {
 			newlabel(&$$);
 			lda(&$2);
 			pop(&$2);
-			opr(SNA);
+			opr(SNA | CLA);
 			jmp(&$$);
 		}
 		;

@@ -404,6 +404,7 @@ extern void endframe(const struct expr *fun)
 
 	/* parameter area */
 	emitc(-nparam);
+	putlabel(&paramlabel);
 	comment("LOAD %04o ARGUMENTS", nparam);
 	skip(nparam);
 

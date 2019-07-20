@@ -151,9 +151,9 @@ opr1(char *buf, int op)
 	strcpy(buf, suffix);
 
 	switch (op & (CLL | CML)) {
-	case CLA: suffix = "CLL "; break;
-	case CMA: suffix = "CML "; break;
-	case STA: suffix = "STL "; break;
+	case CLL: suffix = "CLL "; break;
+	case CML: suffix = "CML "; break;
+	case STL: suffix = "STL "; break;
 	default:  suffix = "";
 	}
 
