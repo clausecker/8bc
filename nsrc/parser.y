@@ -294,6 +294,8 @@ expr		: NAME {
 
 			while (narg > arg0)
 				pop(argstack + (int)--narg);
+
+			push(&$$);
 		}
 		| expr '[' expr ']' {
 			lda(&$3);
