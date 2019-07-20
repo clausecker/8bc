@@ -492,7 +492,7 @@ docmp(struct expr *q, struct expr *a, struct expr *b, int p)
 {
 	lda(b);
 	pop(b);
-	opr(CIA);
+	opr(CIA | STL);
 	tad(a);
 	pop(a);
 	opr(p | CLA);
@@ -509,7 +509,7 @@ doascmp(struct expr *q, struct expr *a, struct expr *b, int p)
 {
 	lda(b);
 	pop(b);
-	opr(CIA);
+	opr(CIA | STL);
 	tad(a);
 	opr(p | CLA);
 	opr(CLA | IAC);
