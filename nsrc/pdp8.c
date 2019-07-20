@@ -496,17 +496,17 @@ extern void endframe(const struct expr *fun)
 
 	/* saved registes area */
 	nsave = nframe + stacksize;
-	emitc(~nsave);
+	emitc(-nsave);
 	comment("SAVE %04o REGISTERS", nsave);
 	skip(nsave);
 
 	/* parameter area */
-	emitc(~nparam);
+	emitc(-nparam);
 	comment("LOAD %04o ARGUMENTS", nparam);
 	skip(nparam);
 
 	/* frame template */
-	emitc(~nframe);
+	emitc(-nframe);
 	comment("LOAD %04o TEMPLATES", nframe);
 	for (i = 0; i < nframe; i++) {
 		dummy.value = frametmpl[i];
