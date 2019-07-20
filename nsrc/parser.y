@@ -435,5 +435,12 @@ argpush(struct expr *e)
 	if (narg >= ARGSIZ)
 		fatal(e->name, "argument stack exhausted");
 
+	/* manually spill unspillable cases */
+	if (class(e->value) == LSTACK || class(e->value) == LDATA) {
+		lda(e);
+		pop(e);
+		push(e);
+	}
+
 	argstack[(int)narg++] = *e;
 }
