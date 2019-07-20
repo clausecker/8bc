@@ -372,8 +372,11 @@ expr		: NAME {
 			push(&$$);
 		}
 		| expr '*' expr /* TODO */
+		| expr ASMUL expr /* TODO */
 		| expr '%' expr /* TODO */
+		| expr ASMOD expr /* TODO */
 		| expr '/' expr /* TODO */
+		| expr ASDIV expr /* TODO */
 		| expr '+' expr {
 			lda(&$3);
 			pop(&$3);
@@ -381,6 +384,7 @@ expr		: NAME {
 			pop(&$1);
 			push(&$$);
 		}
+		| expr ASADD expr /* TODO */
 		| expr '-' expr {
 			lda(&$3);
 			pop(&$3);
@@ -389,40 +393,36 @@ expr		: NAME {
 			pop(&$1);
 			push(&$$);
 		}
-		| expr SHL expr
-		| expr SHR expr
-		| expr '<' expr
-		| expr '>' expr
-		| expr LE expr
-		| expr GE expr
-		| expr EQ expr
-		| expr NE expr
-		| expr '&' expr
-		| expr '^' expr
-		| expr '\\' expr
-		| expr '?' expr ':' expr
+		| expr ASSUB expr /* TODO */
+		| expr SHL expr /* TODO */
+		| expr ASSHL expr /* TODO */
+		| expr SHR expr /* TODO */
+		| expr ASSHR expr /* TODO */
+		| expr '<' expr /* TODO */
+		| expr ASLT expr /* TODO */
+		| expr '>' expr /* TODO */
+		| expr ASGT expr /* TODO */
+		| expr LE expr /* TODO */
+		| expr ASLE expr /* TODO */
+		| expr GE expr /* TODO */
+		| expr ASGE expr /* TODO */
+		| expr EQ expr /* TODO */
+		| expr ASEQ expr /* TODO */
+		| expr NE expr /* TODO */
+		| expr ASNE expr /* TODO */
+		| expr '&' expr /* TODO */
+		| expr ASAND expr /* TODO */
+		| expr '^' expr /* TODO */
+		| expr ASXOR expr /* TODO */
+		| expr '\\' expr /* TODO */
+		| expr ASOR expr /* TODO */
+		| expr '?' expr ':' expr /* TODO */
 		| expr '=' expr {
 			lda(&$3);
 			pop(&$3);
 			dca(&$1);
 			$$ = $1;
 		}
-		| expr ASMUL expr
-		| expr ASMOD expr
-		| expr ASDIV expr
-		| expr ASADD expr
-		| expr ASSUB expr
-		| expr ASSHL expr
-		| expr ASSHR expr
-		| expr ASLT expr
-		| expr ASGT expr
-		| expr ASLE expr
-		| expr ASGE expr
-		| expr ASEQ expr
-		| expr ASNE expr
-		| expr ASAND expr
-		| expr ASXOR expr
-		| expr ASOR expr
 		;
 
 %%
