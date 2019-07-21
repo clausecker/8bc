@@ -30,7 +30,7 @@ ESC	\*[0et*'"n]
 %}
 
 "/*"			{
-				char c0 = '\0', c1;
+				int c0 = '\0', c1;
 
 				/*
 				 * While POSIX says that input() returns 0 on
