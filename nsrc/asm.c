@@ -26,11 +26,11 @@ enum {
 };
 
 /*
- * advance to the indicated column by emitting tabulators.  If we are
+ * advance to the indicated field by emitting tabulators.  If we are
  * already past that column, start a new line.
  */
 static void
-advance(int target)
+field(int target)
 {
 	if (column > target || column == target && target > 0) {
 		fputc('\n', asmfile);
@@ -51,7 +51,7 @@ label(const char *fmt, ...)
 {
 	va_list ap;
 
-	advance(FLABEL);
+	field(FLABEL);
 
 	va_start(ap, fmt);
 	column += vprintf(fmt, ap);
@@ -63,7 +63,7 @@ instr(const char *fmt, ...)
 {
 	va_list ap;
 
-	advance(FINSTR);
+	field(FINSTR);
 
 	va_start(ap, fmt);
 	column += vprintf(fmt, ap);
@@ -75,7 +75,7 @@ comment(const char *fmt, ...)
 {
 	va_list ap;
 
-	advance(FCOMMENT);
+	field(FCOMMENT);
 
 	fputc('/', asmfile);
 	fputc(' ', asmfile);
@@ -95,7 +95,7 @@ commentname(const char *name)
 extern void
 endline(void)
 {
-	advance(FBEGIN);
+	field(FBEGIN);
 }
 
 extern void
@@ -105,7 +105,7 @@ blank(void)
 	if (column == 0)
 		return;
 
-	advance(FBEGIN);
+	field(FBEGIN);
 	fputc('\n', asmfile);
 }
 
@@ -116,7 +116,7 @@ emitc(int c)
 }
 
 extern void
-skip(int n)
+advance(int n)
 {
 	if (n > 0)
 		instr("*.+%04o", n);

@@ -400,14 +400,14 @@ extern void endframe(const struct expr *fun)
 	nsave = nframe + stacksize;
 	emitc(-nsave);
 	comment("SAVE %04o REGISTERS", nsave);
-	skip(nsave);
+	advance(nsave);
 
 	/* parameter area */
 	emitc(-nparam);
 	comment("LOAD %04o ARGUMENTS", nparam);
 	if (nparam > 0) {
 		putlabel(&paramlabel);
-		skip(nparam);
+		advance(nparam);
 	}
 
 	/* frame template */
@@ -421,6 +421,6 @@ extern void endframe(const struct expr *fun)
 	/* automatic variable area */
 	if (nauto > 0) {
 		putlabel(&autolabel);
-		skip(nauto);
+		advance(nauto);
 	}
 }

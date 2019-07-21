@@ -29,8 +29,8 @@ extern void blank(void), endline(void);
  * emitc(c)
  *     Emit the octal representation of c.
  *
- * skip(n)
- *     If n is nonzero, emit a request to skip n words.
+ * advance(n)
+ *     If n is nonzero, emit a request to advance by n words.
  *
  * emitopr(op)
  *     Decode the OPR instruction in the argument and emit it into the
@@ -42,6 +42,6 @@ extern void blank(void), endline(void);
  *     NAMEFMT.
  */
 extern void emitc(int);
-extern void skip(int);
+extern void advance(int);
 extern void emitopr(int);
 extern void commentname(const char *);

@@ -90,7 +90,7 @@ program		: /* empty */
 definition	: define_name initializer ';'
 		| define_name { newframe(&$1); } '(' parameters ')' statement { endframe(&$1); }
 		| define_name { /* vector definition */
-			skip(1);
+			instr(".+1");
 			commentname($1.name);
 		} '[' vector_length ']' initializer ';' {
 			int want, have;
@@ -99,7 +99,7 @@ definition	: define_name initializer ';'
 			have = val($6.value);
 
 			if (have < want)
-				skip(want - have);
+				advance(want - have);
 			else if (want == 0)
 				warn($1.name, "zero length vector");
 		}
@@ -123,7 +123,7 @@ define_name	: NAME {
 		 * just defined in a simple definition.
 		 */
 initializer	: /* empty */ {
-			skip(1);
+			emitc(0);
 			if ($0.value != TOKEN)
 				commentname($0.name);
 
