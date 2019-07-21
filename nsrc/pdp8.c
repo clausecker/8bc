@@ -226,6 +226,7 @@ isz(const struct expr *e)
 {
 	instr("ISZ %s", arg(e));
 	commentname(e->name);
+	skip();
 }
 
 extern void

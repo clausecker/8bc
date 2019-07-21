@@ -26,6 +26,14 @@ enum {
 };
 
 /*
+ * The variable isskip indicates that the next instruction is
+ * conditionally executed and is thus printed prefixed with a blank.
+ * This variable is set by skip() and cleared after every emitted
+ * instruction.
+ */
+static char isskip = 0;
+
+/*
  * advance to the indicated field by emitting tabulators.  If we are
  * already past that column, start a new line.
  */
@@ -54,7 +62,7 @@ label(const char *fmt, ...)
 	field(FLABEL);
 
 	va_start(ap, fmt);
-	column += vprintf(fmt, ap);
+	column += vfprintf(asmfile, fmt, ap);
 	va_end(ap);
 }
 
@@ -65,9 +73,14 @@ instr(const char *fmt, ...)
 
 	field(FINSTR);
 
+	if (isskip)
+		fputc(' ', asmfile);
+
 	va_start(ap, fmt);
-	column += vprintf(fmt, ap);
+	column += vfprintf(asmfile, fmt, ap) + isskip;
 	va_end(ap);
+
+	isskip = 0;
 }
 
 extern void
@@ -81,7 +94,7 @@ comment(const char *fmt, ...)
 	fputc(' ', asmfile);
 
 	va_start(ap, fmt);
-	column += vprintf(fmt, ap) + 2;
+	column += vfprintf(asmfile, fmt, ap) + 2;
 	va_end(ap);
 }
 
@@ -120,6 +133,12 @@ advance(int n)
 {
 	if (n > 0)
 		instr("*.+%04o", n);
+}
+
+extern void
+skip(void)
+{
+	isskip = 1;
 }
 
 /*
@@ -188,13 +207,13 @@ static int
 opr2(char *buf, int op)
 {
 	static const char mnemo[2][3][4] = { "SNL ", "SZA ", "SMA ", "SZL ", "SNA ", "SPA " };
-	int i, skip;
+	int i, skp;
 
-	skip = (op & SKP) == SKP;
+	skp = (op & SKP) == SKP;
 
 	for (i = 0; i < 3; i++)
 		if (op & 00020 << i)
-			strncat(buf, mnemo[skip][i], 4);
+			strncat(buf, mnemo[skp][i], 4);
 
 	if ((op & CLA) == CLA)
 		strcat(buf, "CLA ");
@@ -231,4 +250,7 @@ emitopr(int op)
 	}
 
 	instr(buf);
+
+	if (succeeded && (op & (SMA | SZA | SNL)) > OPR2)
+		skip();
 }

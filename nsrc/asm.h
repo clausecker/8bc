@@ -32,6 +32,12 @@ extern void blank(void), endline(void);
  * advance(n)
  *     If n is nonzero, emit a request to advance by n words.
  *
+ * skip()
+ *     Indicate that the next instruction is conditionally executed,
+ *     causing it to be printed with a leading blank.  This is
+ *     automatically performed when a skipping OPR instruction is
+ *     emitted.
+ *
  * emitopr(op)
  *     Decode the OPR instruction in the argument and emit it into the
  *     instruction field.  If op is not a valid OPR instruction, print
@@ -43,5 +49,6 @@ extern void blank(void), endline(void);
  */
 extern void emitc(int);
 extern void advance(int);
+extern void skip(void);
 extern void emitopr(int);
 extern void commentname(const char *);
