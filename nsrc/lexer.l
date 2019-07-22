@@ -19,7 +19,7 @@ static int unescape(const char **);
 unsigned short lineno = 1;
 %}
 
-ESC	\*[0et*'"n]
+ESC	\*[0eEtT*'"nN()]
 
 %%
 
@@ -187,13 +187,13 @@ unescape(const char **s)
 	*s += 2;
 	c = (*s)[-1];
 
-	switch (c) {
+	switch (toupper(c)) {
 	case '0': return ('\0');
-	case 'e': return (0004); /* ASCII EOF */
+	case 'E': return (0004); /* ASCII EOF */
 	case '(': return ('{');
 	case ')': return ('}');
-	case 't': return ('\t');
-	case 'n': return ('\n');
+	case 'T': return ('\t');
+	case 'N': return ('\n');
 	default:
 		warn(NULL, "unrecognised escape sequence *%c", c);
 
