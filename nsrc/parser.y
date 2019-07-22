@@ -474,7 +474,7 @@ argpush(struct expr *e)
 		fatal(e->name, "argument stack exhausted");
 
 	/* manually spill unspillable cases */
-	if (class(e->value) == LSTACK || class(e->value) == LDATA) {
+	if (class(e->value) == LSTACK || class(e->value) == LVALUE) {
 		lda(e);
 		pop(e);
 		push(e);
