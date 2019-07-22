@@ -178,15 +178,15 @@ opr1(char *buf, int op)
 
 	strcat(buf, suffix);
 
+	if ((op & IAC) == IAC)
+		strcat(buf, "IAC ");
+
 	/* can't have RAL and RAR set at the same time */
 	if ((op & (RAL | RAR)) == (RAL | RAR))
 		return (0);
 
 	/* inspect RAL, RAR, and BSW */
 	strncat(buf, rots[op >> 1 & 7], 4);
-
-	if ((op & IAC) == IAC)
-		strcat(buf, "IAC ");
 
 	return (1);
 }
