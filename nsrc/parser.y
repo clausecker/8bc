@@ -443,7 +443,7 @@ expr		: NAME {
 		| expr '\\' expr { door(&$$, &$1, &$3, CIA, 0); }
 		| expr ASOR expr { door(&$$, &$1, &$3, CIA, 1); }
 		| expr '?' expr ':' expr {
-			opr(STA);
+			opr(STA | CLL);
 			tad(&$1); /* L = $1 != 0 */
 			pop(&$1);
 			opr(SNL | CLA);
