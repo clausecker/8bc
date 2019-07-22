@@ -18,10 +18,11 @@ static struct expr argstack[ARGSIZ];
 static char narg = 0;
 
 static void argpush(struct expr *e);
+static void dortcall(struct expr *, struct expr *, struct expr *, const char *, int);
 static void docmp(struct expr *, struct expr *, struct expr *, int);
 static void doascmp(struct expr *, struct expr *, struct expr *, int);
-static void door(struct expr *q, struct expr *a, struct expr *b, int op, int as);
-static void doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as);
+static void door(struct expr *, struct expr *, struct expr *, int, int);
+static void doshift(struct expr *, struct expr *, struct expr *, int, int);
 %}
 
 %token	CONSTANT
@@ -371,12 +372,12 @@ expr		: NAME {
 			opr(CLA | IAC);
 			push(&$$);
 		}
-		| expr '*' expr /* TODO */
-		| expr ASMUL expr /* TODO */
-		| expr '%' expr /* TODO */
-		| expr ASMOD expr /* TODO */
-		| expr '/' expr /* TODO */
-		| expr ASDIV expr /* TODO */
+		| expr '*' expr { dortcall(&$$, &$1, &$3, "MUL", 0); }
+		| expr ASMUL expr { dortcall(&$$, &$1, &$3, "MUL", 1); }
+		| expr '%' expr { dortcall(&$$, &$1, &$3, "MOD", 0); }
+		| expr ASMOD expr { dortcall(&$$, &$1, &$3, "MOD", 1); }
+		| expr '/' expr { dortcall(&$$, &$1, &$3, "DIV", 0); }
+		| expr ASDIV expr { dortcall(&$$, &$1, &$3, "DIV", 1); }
 		| expr '+' expr {
 			lda(&$3);
 			pop(&$3);
@@ -481,6 +482,17 @@ argpush(struct expr *e)
 	}
 
 	argstack[(int)narg++] = *e;
+}
+
+/*
+ * Implement binary operator op (*, /, %) by calling into the runtime.
+ * If as is clear, pop a and b and push the result to q.  If it is
+ * set, pop just b, deposit the result into a and set *q = *a.
+ */
+static void
+dortcall(struct expr *q, struct expr *a, struct expr *b, const char *op, int as)
+{
+	/* TODO */
 }
 
 /*
