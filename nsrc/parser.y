@@ -17,8 +17,8 @@
 static struct expr argstack[ARGSIZ];
 static char narg = 0;
 
-static void argpush(struct expr *e);
-static void dortcall(struct expr *, struct expr *, struct expr *, const char *, int);
+static void argpush(struct expr *);
+static void docall(struct expr *, int);
 static void docmp(struct expr *, struct expr *, struct expr *, int);
 static void doascmp(struct expr *, struct expr *, struct expr *, int);
 static void door(struct expr *, struct expr *, struct expr *, int, int);
@@ -287,19 +287,8 @@ expr		: NAME {
 		| CONSTANT /* default action */
 		| '(' expr ')' { $$ = $2; }
 		| expr '(' arguments ')' {
-			int i, arg0, argc;
-
 			jms(&$1);
-
-			argc = $3.value;
-			arg0 = narg - argc;
-			for (i = 0; i < argc; i++)
-				emitl(&argstack[arg0 + i]);
-
-			while (narg > arg0)
-				pop(argstack + (int)--narg);
-
-			push(&$$);
+			docall(&$$, $3.value);
 		}
 		| expr '[' expr ']' {
 			lda(&$3);
@@ -372,12 +361,16 @@ expr		: NAME {
 			opr(CLA | IAC);
 			push(&$$);
 		}
-		| expr '*' expr { dortcall(&$$, &$1, &$3, "MUL", 0); }
-		| expr ASMUL expr { dortcall(&$$, &$1, &$3, "MUL", 1); }
-		| expr '%' expr { dortcall(&$$, &$1, &$3, "MOD", 0); }
-		| expr ASMOD expr { dortcall(&$$, &$1, &$3, "MOD", 1); }
-		| expr '/' expr { dortcall(&$$, &$1, &$3, "DIV", 0); }
-		| expr ASDIV expr { dortcall(&$$, &$1, &$3, "DIV", 1); }
+		| expr '*' { argpush(&$1); } expr {
+			argpush(&$4);
+			instr("MUL");
+			docall(&$$, 2);
+		}
+		| expr ASMUL expr /* TODO */
+		| expr '%' expr /* TODO */
+		| expr ASMOD expr /* TODO */
+		| expr '/' expr /* TODO */
+		| expr ASDIV expr /* TODO */
 		| expr '+' expr {
 			lda(&$3);
 			pop(&$3);
@@ -485,14 +478,21 @@ argpush(struct expr *e)
 }
 
 /*
- * Implement binary operator op (*, /, %) by calling into the runtime.
- * If as is clear, pop a and b and push the result to q.  If it is
- * set, pop just b, deposit the result into a and set *q = *a.
+ * Emit a function call with argc arguments and store the return
+ * value in e.  The JMS instruction is not emitted.
  */
-static void
-dortcall(struct expr *q, struct expr *a, struct expr *b, const char *op, int as)
+static void docall(struct expr *q, int argc)
 {
-	/* TODO */
+	int i, arg0;
+
+	arg0 = narg - argc;
+	for (i = 0; i < argc; i++)
+		emitl(&argstack[arg0 + i]);
+
+	while (narg > arg0)
+		pop(argstack + (int)--narg);
+
+	push(q);
 }
 
 /*
