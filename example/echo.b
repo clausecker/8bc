@@ -5,5 +5,5 @@ main()
 	auto c;
 
 	while ((c = getchar()) != '*e')
-		putchar(c);
+		;
 }
