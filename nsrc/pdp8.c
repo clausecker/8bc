@@ -269,8 +269,8 @@ push(struct expr *e)
 	e->value = ++tos | RSTACK;
 	memset(e->name, 0, MAXNAME);
 
-	if (tos > stacksize) {
-		stacksize = tos;
+	if (tos >= stacksize) {
+		stacksize = tos + 1;
 		if (stacksize > NSCRATCH)
 			error(NULL, "stack overflow");
 	}
