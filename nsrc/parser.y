@@ -23,6 +23,9 @@ static void docmp(struct expr *, struct expr *, struct expr *, int);
 static void doascmp(struct expr *, struct expr *, struct expr *, int);
 static void door(struct expr *, struct expr *, struct expr *, int, int);
 static void doshift(struct expr *, struct expr *, struct expr *, int, int);
+
+/* arguments for *, /, and % */
+static struct expr factor = { RVALUE | 00010, "FACTOR" };
 %}
 
 %token	CONSTANT
@@ -361,12 +364,24 @@ expr		: NAME {
 			opr(CLA | IAC);
 			push(&$$);
 		}
-		| expr '*' { argpush(&$1); } expr {
-			argpush(&$4);
+		| expr '*' expr {
+			lda(&$3);
+			pop(&$3);
+			dca(&factor);
+			lda(&$1);
+			pop(&$1);
 			instr("MUL");
-			docall(&$$, 2);
+			push(&$$);
 		}
-		| expr ASMUL expr /* TODO */
+		| expr ASMUL expr {
+			lda(&$3);
+			pop(&$3);
+			dca(&factor);
+			lda(&$1);
+			instr("MUL");
+			dca(&$1);
+			$$ = $1;
+		}
 		| expr '%' expr /* TODO */
 		| expr ASMOD expr /* TODO */
 		| expr '/' expr /* TODO */
