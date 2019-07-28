@@ -52,3 +52,18 @@ and the PDP-8 target architecture was chosen to highlight the
 characteristics of the PDP-8, what design concessions have to be made
 to bring B on it, and how computers evolved to satisfy the demands of
 procedural languages.
+.NH 1
+Background
+.NH 2
+The PDP-8 architecture
+.NH 2
+The B language
+.NH 1
+Runtime environment and ABI
+.NH 2
+Historical implementations
+.NH 2
+Our implementation
+.NH 1
+The design of 8bc
+
