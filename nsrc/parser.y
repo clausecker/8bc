@@ -179,7 +179,7 @@ statement	: AUTO auto_list ';' statement
 			newlabel(&$$);
 			opr(CLA);
 			jmp(&$$);
-			putlabel(&$1);
+			putlabel(&$2);
 		} statement {
 			opr(CLA);
 			putlabel(&$5);
@@ -600,8 +600,6 @@ doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as)
 	opr(CMA);
 	push(&counter);
 	lda(a);
-	if (!as)
-		pop(a);
 	jmp(&end);
 	putlabel(&again);
 	opr(CLL | op);
@@ -612,6 +610,8 @@ doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as)
 	if (as) {
 		dca(a);
 		*q = *a;
-	} else
+	} else {
+		pop(a);
 		push(q);
+	}
 }
