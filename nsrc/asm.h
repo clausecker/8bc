@@ -38,11 +38,6 @@ extern void blank(void), endline(void);
  *     automatically performed when a skipping OPR instruction is
  *     emitted.
  *
- * emitopr(op)
- *     Decode the OPR instruction in the argument and emit it into the
- *     instruction field.  If op is not a valid OPR instruction, print
- *     a warning and emit the octal value of op.
- *
  * commentname(name)
  *     If name is not an empty string, print a comment for name using
  *     NAMEFMT.
@@ -50,5 +45,4 @@ extern void blank(void), endline(void);
 extern void emitc(int);
 extern void advance(int);
 extern void skip(void);
-extern void emitopr(int);
 extern void commentname(const char *);

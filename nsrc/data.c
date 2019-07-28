@@ -6,6 +6,7 @@
 #include "param.h"
 #include "pdp8.h"
 #include "asm.h"
+#include "codegen.h"
 #include "data.h"
 #include "error.h"
 

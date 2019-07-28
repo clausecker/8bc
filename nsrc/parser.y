@@ -1,10 +1,11 @@
 %{
 #include <stdio.h>
 
-#include "asm.h"
 #include "param.h"
-#include "name.h"
 #include "pdp8.h"
+#include "asm.h"
+#include "codegen.h"
+#include "name.h"
 #include "data.h"
 #include "error.h"
 #include "parser.h"
