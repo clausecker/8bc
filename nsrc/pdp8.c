@@ -33,10 +33,6 @@
  *     enumeration below.  This is orthogonal to the achave/acwant
  *     mechanism.
  */
-static struct expr achave = { CONST | 0, "" };
-static struct expr acwant = { CONST | 0, "" };
-char lwant = 0, lhave = 0, state = CURRENT;
-
 /* state enumeration */
 enum {
 	CURRENT,  /* no specia */
@@ -44,6 +40,10 @@ enum {
 	SKIPABLE, /* this instruction is possibly skipped */
 	SKIPPED,  /* this instruction is definitely skipped */
 };
+
+static struct expr achave = { RCONST | 0, "" };
+static struct expr acwant = { RCONST | 0, "" };
+char lwant = 0, lhave = 0, state = CURRENT;
 
 extern struct expr
 r2lval(const struct expr *e)
@@ -108,7 +108,7 @@ pop(struct expr *e)
 }
 
 extern void
-clearac(void)
+acclear(void)
 {
 	;
 }
