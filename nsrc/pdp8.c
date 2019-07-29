@@ -72,3 +72,15 @@ pop(struct expr *e)
 {
 	emitpop(e);
 }
+
+extern void
+clearac(void)
+{
+	;
+}
+
+extern void
+catchup(void)
+{
+	;
+}

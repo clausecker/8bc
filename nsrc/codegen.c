@@ -434,6 +434,8 @@ newframe(const struct expr *fun)
 	commentname(fun->name);
 	instr("ENTER");
 	emitl(&framelabel);
+
+	acclear();
 }
 
 extern void

@@ -166,3 +166,17 @@ extern struct expr l2rval(const struct expr *);
  */
 extern void push(struct expr *);
 extern void pop(struct expr *);
+
+/*
+ * State management.
+ *
+ * acclear()
+ *     Notify the optimiser that you expect the AC to be clear at this
+ *     point in time.
+ *
+ * catchup()
+ *     Tell the optimiser to emit instructions such that the actual
+ *     state of the machine equals the simulated state of the machine.
+ */
+extern void acclear(void);
+extern void catchup(void);
