@@ -102,7 +102,7 @@ placelabel(const struct expr *e, int suffix)
 extern void
 putlabel(const struct expr *e)
 {
-	/* TODO: reify() needed? */
+	catchup();
 	placelabel(e, ',');
 }
 

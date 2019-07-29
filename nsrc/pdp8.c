@@ -11,6 +11,40 @@
 #include "data.h"
 #include "name.h"
 
+/*
+ * Machine state.
+ *
+ * achave
+ *     The expression whose value is currently in AC.  If the value
+ *     of AC does not correspond to any expression, it is set to
+ *     RANDOM.
+ *
+ * acwant
+ *     The expression whose value should currently be in AC.  If the
+ *     value of AC should not correspond to any expression, it is set
+ *     to RANDOM.
+ *
+ * lwant, lhave
+ *     The current and desired value of the link bit.  This should be
+ *     one of LCLEAR, LSET, LRANDOM.
+ *
+ * state
+ *     The current state of the code generation.  Documented in the
+ *     enumeration below.  This is orthogonal to the achave/acwant
+ *     mechanism.
+ */
+static struct expr achave = { CONST | 0, "" };
+static struct expr acwant = { CONST | 0, "" };
+char lwant = 0, lhave = 0, state = CURRENT;
+
+/* state enumeration */
+enum {
+	CURRENT,  /* no specia */
+	DIRTY,    /* AC contents needs to be deposited into stack register */
+	SKIPABLE, /* this instruction is possibly skipped */
+	SKIPPED,  /* this instruction is definitely skipped */
+};
+
 extern struct expr
 r2lval(const struct expr *e)
 {
