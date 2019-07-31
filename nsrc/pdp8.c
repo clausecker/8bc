@@ -28,22 +28,36 @@
  *     The current and desired value of the link bit.  This should be
  *     one of LCLEAR, LSET, LRANDOM.
  *
- * state
+ * skipstate
  *     The current state of the code generation.  Documented in the
  *     enumeration below.  This is orthogonal to the achave/acwant
  *     mechanism.
+ *
+ * dirty
+ *     This flag is 1 if AC contents need to be deposited into acwant.
+ *     If dirty is set, achave == acwant.
  */
-/* state enumeration */
+/* AC state enumeration */
 enum {
-	CURRENT,  /* no specia */
-	DIRTY,    /* AC contents needs to be deposited into stack register */
-	SKIPABLE, /* this instruction is possibly skipped */
-	SKIPPED,  /* this instruction is definitely skipped */
+	CURRENT,  /* nothing deferred (may still need to update AC to acwant) */
+	SKIPABLE, /* next instruction could be skipped, do not alter */
+	SKIPPED,  /* do not emit next instruction */
+};
+
+/* L state enumeration */
+enum {
+	LRANDOM,  /* L bit has unknown value */
+	LCLEAR,   /* L bit is known to be clear */
+	LSET,     /* L bit is known to be set */
 };
 
 static struct expr achave = { RCONST | 0, "" };
 static struct expr acwant = { RCONST | 0, "" };
-char lwant = 0, lhave = 0, state = CURRENT;
+char lwant = LRANDOM, lhave = LRANDOM, acstate = CURRENT, dirty = 0;
+
+/* AC value templates */
+static const struct expr zero = { RCONST | 0, "" };
+static const struct expr random = { RANDOM, "" };
 
 extern struct expr
 r2lval(const struct expr *e)
@@ -73,48 +87,111 @@ l2rval(const struct expr *e)
 	return (r);
 }
 
-/* stubs */
-extern void and(const struct expr *e) { emitand(e); }
-extern void tad(const struct expr *e) { emittad(e); }
-extern void isz(const struct expr *e) { emitisz(e); }
-extern void dca(const struct expr *e) { emitdca(e); }
-extern void jms(const struct expr *e) { emitjms(e); }
-extern void jmp(const struct expr *e) { emitjmp(e); }
+extern void
+and(const struct expr *e)
+{
+	catchup();
+	emitand(e);
+	acwant = achave = random;
+}
+
+extern void
+tad(const struct expr *e)
+{
+	catchup();
+	emittad(e);
+	acwant = achave = random;
+}
+
+extern void
+isz(const struct expr *e)
+{
+	catchup();
+	emitisz(e);
+	acwant = achave = random;
+}
+
+extern void
+dca(const struct expr *e)
+{
+	catchup();
+	emitdca(e);
+	acwant = achave = random;
+}
+
+extern void
+jms(const struct expr *e)
+{
+	catchup();
+	emitjms(e);
+	acwant = achave = random;
+}
+
+extern void
+jmp(const struct expr *e)
+{
+	catchup();
+	emitjmp(e);
+}
 
 extern void
 lda(const struct expr *e)
 {
+	/* omit duplicate loads */
+	if (acwant.value == e->value)
+		return;
+
+	catchup();
 	opr(CLA);
 	tad(e);
+	acwant = achave = *e;
 }
 
 extern void
 opr(int op)
 {
+	catchup();
 	emitopr(op);
+	acwant = achave = random;
 }
 
 extern void
 push(struct expr *e)
 {
+	if (acwant.value != RANDOM && !onstack(acwant.value)) {
+		*e = acwant;
+		return;
+	}
+
 	emitpush(e);
-	dca(e);
+	achave = acwant = *e;
+	dirty = 1;
 }
 
 extern void
 pop(struct expr *e)
 {
+	if (acwant.value == e->value)
+		dirty = 0;
+
 	emitpop(e);
 }
 
 extern void
 acclear(void)
 {
-	;
+	achave = acwant = zero;
+	lwant = lhave = LRANDOM;
+	acstate = CURRENT;
 }
 
 extern void
 catchup(void)
 {
-	;
+	if (dirty) {
+		emitdca(&acwant);
+		dirty = 0;
+	}
+
+	/* todo: actually catch up */
 }

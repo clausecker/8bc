@@ -62,6 +62,7 @@ enum {
 	EXPIRED = INVALID | 0000002, /* expired stack register */
 	NORVAL  = INVALID | 0000003, /* not an rvalue */
 	NOLVAL  = INVALID | 0000004, /* not an lvalue */
+	RANDOM  = INVALID | 0000005, /* unknown value */
 };
 
 /*
