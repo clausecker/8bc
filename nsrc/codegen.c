@@ -461,6 +461,7 @@ extern void
 emitisn(int isn, const struct expr *e)
 {
 	static const char mnemo[6][4] = { "AND", "TAD", "ISZ", "DCA", "JMS", "JMP" };
+	int skp = 0;
 	char buf[5];
 
 	switch (isn & 07000) {
@@ -473,8 +474,14 @@ emitisn(int isn, const struct expr *e)
 		emitopr(isn);
 		break;
 
+	case ISZ:
+		skp = 1;
+		/* FALLTHROUGH */
+
 	default:
 		instr("%s %s", mnemo[isn >> 9 & 7], arg(e));
 		commentname(e->name);
+		if (skp)
+			skip();
 	}
 }
