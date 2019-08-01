@@ -224,49 +224,6 @@ arg(const struct expr *e)
 	return (buf);
 }
 
-extern void
-emitand(const struct expr *e)
-{
-	instr("AND %s", arg(e));
-	commentname(e->name);
-}
-
-extern void
-emittad(const struct expr *e)
-{
-	instr("TAD %s", arg(e));
-	commentname(e->name);
-}
-
-extern void
-emitisz(const struct expr *e)
-{
-	instr("ISZ %s", arg(e));
-	commentname(e->name);
-	skip();
-}
-
-extern void
-emitdca(const struct expr *e)
-{
-	instr("DCA %s", arg(e));
-	commentname(e->name);
-}
-
-extern void
-emitjms(const struct expr *e)
-{
-	instr("JMS %s", arg(e));
-	commentname(e->name);
-}
-
-extern void
-emitjmp(const struct expr *e)
-{
-	instr("JMP %s", arg(e));
-	commentname(e->name);
-}
-
 /*
  * Generate a group 1 microcoded instruction.  Up to four instructions
  * may be emitted:
@@ -347,7 +304,10 @@ opr2(char *buf, int op)
 	return (1);
 }
 
-extern void
+/*
+ * Emit the given OPR instruction.
+ */
+static void
 emitopr(int op)
 {
 	char buf[4 * 4 + 1];
@@ -494,5 +454,27 @@ extern void endframe(const struct expr *fun)
 	if (nauto > 0) {
 		putlabel(&autolabel);
 		advance(nauto);
+	}
+}
+
+extern void
+emitisn(int isn, const struct expr *e)
+{
+	static const char mnemo[6][4] = { "AND", "TAD", "ISZ", "DCA", "JMS", "JMP" };
+	char buf[5];
+
+	switch (isn & 07000) {
+	case IOT:
+		sprintf(buf, "%04o", isn & 07777);
+		fatal(buf, "IOT not supported");
+		break;
+
+	case OPR:
+		emitopr(isn);
+		break;
+
+	default:
+		instr("%s %s", mnemo[isn >> 9 & 7], arg(e));
+		commentname(e->name);
 	}
 }

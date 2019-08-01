@@ -1,15 +1,9 @@
 /*
- * Emit the specified PDP-8 instruction.  The function argument is
- * provided as an argument to the instruction with an appropriate
+ * Emit the PDP-8 instruction isn.  Unless isn is an OPR instruction,
+ * e is used as an argument to the instruction with an appropriate
  * addressing mode.
  */
-extern void emitand(const struct expr *);
-extern void emittad(const struct expr *);
-extern void emitisz(const struct expr *);
-extern void emitdca(const struct expr *);
-extern void emitjms(const struct expr *);
-extern void emitjmp(const struct expr *);
-extern void emitopr(int);
+extern void emitisn(int, const struct expr *);
 
 /*
  * Emitting literal values.

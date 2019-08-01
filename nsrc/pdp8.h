@@ -83,6 +83,23 @@ extern void jms(const struct expr *);
 extern void jmp(const struct expr *);
 extern void lda(const struct expr *);
 
+/* opcodes */
+enum {
+	AND = 00000, /* bitwise and */
+	TAD = 01000, /* two's complement add */
+	ISZ = 02000, /* increment and skip if zero */
+	DCA = 03000, /* deposit and clear AC */
+	JMS = 04000, /* jump subroutine */
+	JMP = 05000, /* jump */
+	IOT = 06000, /* IO transfer */
+	OPR = 07000, /* operate (microcoded instructions */
+
+	/* pseudo instructions, internal use only */
+	CUP = 04000, /* catch up */
+	RST = 05000, /* discard deferred state, clear AC */
+	RND = 06000, /* mark AC state as unknown */
+};
+
 /*
  * Generate the given microcoded PDP-8 instruction.  Use the provided
  * macros to build microcoded instructions.  As with a real PDP-8,
@@ -92,7 +109,7 @@ extern void lda(const struct expr *);
  */
 enum {
 	/* group 1 */
-	OPR1 =        07000,
+	OPR1 = OPR  | 00000,
 	CLA  = OPR1 | 00200, /* clear AC */
 	CLL  = OPR1 | 00100, /* clear L */
 	CMA  = OPR1 | 00040, /* complement AC */
@@ -102,7 +119,7 @@ enum {
 	BSW  = OPR1 | 00002, /* byte swap (not supported) / rotate twice */
 	IAC  = OPR1 | 00001, /* increment AC */
 
-	NOP  = OPR1,
+	NOP  = OPR1 | 00000, /* no operation */
 	RTR  = RAR  | BSW,   /* rotate twice right */
 	RTL  = RAL  | BSW,   /* rotate twice left */
 	STA  = CLA  | CMA,   /* set AC */
@@ -111,7 +128,7 @@ enum {
 	GLK  = CLA  | RAL,   /* get link */
 
 	/* group 2 */
-	OPR2 =        07400,
+	OPR2 = OPR  | 00400,
 	SMA  = OPR2 | 00100, /* skip on minus AC */
 	SZA  = OPR2 | 00040, /* skip on zero AC */
 	SNL  = OPR2 | 00020, /* skip on non-zero L */
@@ -155,7 +172,7 @@ extern struct expr l2rval(const struct expr *);
  * push(expr)
  *     Generate an expression referring to the content of AC.  This
  *     might involve allocating a new stack register for it.  The
- *     content of AC is undefined after this instruction.
+ *     content of AC is preserved by this instruction.
  *
  * pop(expr)
  *     Mark expr as no longer needed and possibly free the stack
