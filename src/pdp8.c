@@ -169,8 +169,7 @@ extern void
 lda(const struct expr *e)
 {
 	/* omit duplicate loads */
-	if (acstate
-.value == e->value)
+	if (acstate.value == e->value)
 		return;
 
 	opr(CLA);
@@ -201,20 +200,37 @@ catchup(void)
 }
 
 /*
+ * instruction selection state machine.
  *
+ * Compute the effect of instruction op with operand e and remember it.
+ * Update acstate to the new content of AC.  Possible emit code.
+ *
+ * Three pseudo-instructions exist to manipulate the state machine:
+ *
+ * CUP "catch up" -- emit all deferred instructions such that the
+ *     the current machine state corresponds to the simulated state.
+ *     This pseudo-instruction is emitted whenever isel is circumvented
+ *     to emit code or data into the assembly file directly.
+ *
+ * RST "reset" -- forget all deferred instructions and reset the state
+ *     machine to a clear accumulator.  This is used at the beginning of
+ *     functions and after labels that are only reachable by jumping to
+ *     them.
+ *
+ * RND "AC state random" -- forget any knowledge about what AC contains
+ *     and assume that its contents are unpredictable.  This is used
+ *     whenever isel is circumvented such that AC may have been
+ *     modified.
  */
 static void
 isel(int op, const struct expr *e)
 {
 	/* dummy */
 	acstate = random;
-	switch (op & 07000) {
-	case CUP:
-	case RST:
-	case RND:
-		break;
 
-	default:
-		emitisn(op, e);
-	}
+	/* pseudo instruction? */
+	if (op & 010000)
+		return;
+
+	emitisn(op, e);
 }

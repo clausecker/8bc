@@ -95,9 +95,9 @@ enum {
 	OPR = 07000, /* operate (microcoded instructions */
 
 	/* pseudo instructions, internal use only */
-	CUP = 04000, /* catch up */
-	RST = 05000, /* discard deferred state, clear AC */
-	RND = 06000, /* mark AC state as unknown */
+	CUP = 010000, /* catch up */
+	RST = 011000, /* discard deferred state, clear AC */
+	RND = 012000, /* mark AC state as unknown */
 };
 
 /*
