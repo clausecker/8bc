@@ -161,8 +161,8 @@ jms(const struct expr *e)
 extern void
 jmp(const struct expr *e)
 {
-	catchup();
-	emitisn(JMP, e);
+	writeback();
+	isel(JMP, e);
 }
 
 extern void
@@ -225,12 +225,35 @@ catchup(void)
 static void
 isel(int op, const struct expr *e)
 {
-	/* dummy */
-	acstate = random;
+	static enum {
+		ACCLEAR,	/* AC is clear, no deferred state */
+		ACRANDOM,	/* AC holds an unknown value, no deferred state */
+		ACCONST,	/* AC holds a constant, computing it is deferred */
+		ACLCONST,	/* like ACCONST but L state is known */
+		SKIP,		/* next instruction will be skipped, AC value known */
+	} state = ACCLEAR;
 
 	/* pseudo instruction? */
-	if (op & 010000)
-		return;
+	if (op & 010000) {
+		switch (op) {
+		case CUP:
+		case RST:
+		case RND:
+			/* TODO */
+			break;
 
-	emitisn(op, e);
+		default:
+			fatal(NULL, "unknown pseudo instruction %07o", op);
+		}
+
+		return;
+	}
+
+	/* dummy */
+	for (;;) switch (state) {
+	default:
+		acstate = random;
+		emitisn(op, e);
+		return;
+	}
 }
