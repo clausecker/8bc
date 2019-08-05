@@ -161,8 +161,8 @@ jms(const struct expr *e)
 extern void
 jmp(const struct expr *e)
 {
-	writeback();
-	isel(JMP, e);
+	catchup();
+	emitisn(JMP, e);
 }
 
 extern void
@@ -172,15 +172,28 @@ lda(const struct expr *e)
 	if (acstate.value == e->value)
 		return;
 
-	opr(CLA);
-	isel(TAD, e);
+	isel(LDA, e);
 }
 
 extern void
 opr(int op)
 {
-	if (op != NOP && op != (NOP | OPR2))
+	/* simplify case distinction */
+	switch (op) {
+	case OPR2:
+		op = NOP;
+		/* FALLTHROUGH */
+
+	case NOP:
+		break;
+
+	case OPR2 | CLA:
+		op = CLA;
+		/* FALLTHROUGH */
+
+	default:
 		writeback();
+	}
 
 	isel(op, NULL);
 }
@@ -200,12 +213,28 @@ catchup(void)
 }
 
 /*
+ * Peel instructions off op until NOP remains.  The instructions are
+ * returned in the following order:
+ *
+ * group 1: CLA, CLL, CMA, CML, RAR/RAL/RTR/RTL/BSW, IAC
+ * group 2: SMA, SZA, SNL, SKP, CLA
+ *
+ * the returned micro instruction is then stripped off op.  When no bit
+ * remains, NOP is returned.
+ */
+static int
+peelopr(int *op)
+{
+	/* TODO */
+}
+
+/*
  * instruction selection state machine.
  *
  * Compute the effect of instruction op with operand e and remember it.
  * Update acstate to the new content of AC.  Possible emit code.
  *
- * Three pseudo-instructions exist to manipulate the state machine:
+ * Three pseudo instructions exist to manipulate the state machine:
  *
  * CUP "catch up" -- emit all deferred instructions such that the
  *     the current machine state corresponds to the simulated state.
@@ -222,38 +251,117 @@ catchup(void)
  *     whenever isel is circumvented such that AC may have been
  *     modified.
  */
+enum { MAXDEFER = 10, }; /* dummy value */
 static void
 isel(int op, const struct expr *e)
 {
-	static enum {
-		ACCLEAR,	/* AC is clear, no deferred state */
-		ACRANDOM,	/* AC holds an unknown value, no deferred state */
-		ACCONST,	/* AC holds a constant, computing it is deferred */
-		ACLCONST,	/* like ACCONST but L state is known */
-		SKIP,		/* next instruction will be skipped, AC value known */
-	} state = ACCLEAR;
+	/* an instruction with a corresponding operand. */
+	struct isn {
+		struct expr e;
+		unsigned short op;
+	};
 
-	/* pseudo instruction? */
-	if (op & 010000) {
-		switch (op) {
-		case CUP:
-		case RST:
-		case RND:
-			/* TODO */
-			break;
+	/*
+	 * deferred instructions.  If these instructions were emitted,
+	 * the state of the machine would match the expected state.
+ 	 */
+	static struct isn deferrals[MAXDEFER];
+	static unsigned char ndeferred = 0;
 
-		default:
-			fatal(NULL, "unknown pseudo instruction %07o", op);
-		}
+	/* machine states */
+	enum {
+		ACCONST, /* AC holds a constant, L random */
+		ACRANDOM, /* AC and L hold unknown values */
+		SKIPABLE, /* next instruction might be skipped */
+	};
 
+	static unsigned char state = ACCONST, skipstate;
+	static unsigned short lac;
+	static unsigned char needsclear = 0, ldefined = 0;
+
+	/* first, handle pseudo instructions */
+	switch (op) {
+	case CUP:
+		goto flush;
+
+	case RST:
+		needsclear = 0;
+		ndeferred = 0;
+		state = ACCONST;
+		lac = 0;
+		acstate = zero;
 		return;
+
+	case RND:
+		ndeferred = 0;
+		state = ACRANDOM;
+		acstate = random;
+		return;
+
+	default:
+		/* not a pseudo instruction */
+		;
 	}
 
-	/* dummy */
-	for (;;) switch (state) {
-	default:
-		acstate = random;
-		emitisn(op, e);
-		return;
+	/* defer current instruction */
+	deferrals[ndeferred].op = op;
+	deferrals[ndeferred].e = e != NULL ? *e : zero;
+
+	/* process state machine */
+	switch (state) {
+	/*
+	 * Invariant: 1--3 instruction deferred.  The deferred
+	 * instruction do the following:
+	 *
+	 * 1. if needsclear, AC is cleared.
+	 * 2. lac is loaded into L:AC.
+	 * 3. op/e is executed.
+	 */
+	case ACCONST:
+		switch (op & 07000) {
+		case AND:
+			if (!isconst(e->value))
+				goto indeterminate;
+
+			lac &= 010000 | e->value & 07777;
+			break;
+
+		case TAD:
+			if (!isconst(e->value))
+				goto indeterminate;
+
+			lac += e->value & 07777;
+			lac &= 017777;
+			break;
+
+		case ISZ:
+			skipstate = state;
+			state = SKIPABLE;
+			return;
+
+		case DCA:
+			/* TODO: handling applies to most states */
+			needsclear = 0;
+			ldefined = 0;
+			state = ACCONST;
+			lac = 0;
+			goto flush;
+
+		case JMP:
+			goto flush;
+
+		case OPR:
+			for (;;) switch (peelopr(&op)) {
+			case NOP:
+				break;
+			}
+		}
+
+		/* TODO */
+
+	case ACRANDOM:
+	case SKIPABLE:
+		/* TODO */
+		abort();
 	}
 }

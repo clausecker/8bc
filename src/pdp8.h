@@ -92,9 +92,10 @@ enum {
 	JMS = 04000, /* jump subroutine */
 	JMP = 05000, /* jump */
 	IOT = 06000, /* IO transfer */
-	OPR = 07000, /* operate (microcoded instructions */
+	OPR = 07000, /* operate (microcoded instructions) */
 
 	/* pseudo instructions, internal use only */
+	LDA = 006000, /* load AC, set L to undefined value */
 	CUP = 010000, /* catch up */
 	RST = 011000, /* discard deferred state, clear AC */
 	RND = 012000, /* mark AC state as unknown */
