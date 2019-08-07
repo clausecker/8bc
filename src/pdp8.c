@@ -216,7 +216,7 @@ catchup(void)
  * Peel instructions off op until NOP remains.  The instructions are
  * returned in the following order:
  *
- * group 1: CLA, CLL, CMA, CML, RAR/RAL/RTR/RTL/BSW, IAC
+ * group 1: CLA, CLL, CMA, CML, IAC, RAR/RAL/RTR/RTL/BSW
  * group 2: SMA, SZA, SNL, SKP, CLA
  *
  * the returned micro instruction is then stripped off op.  When no bit
@@ -225,7 +225,22 @@ catchup(void)
 static int
 peelopr(int *op)
 {
-	/* TODO */
+	int i, uop;
+	static const unsigned short
+	    opr1tab[] = { CLA, CLL, CMA, CML, IAC, RTR | RTL, 0 },
+	    opr2tab[] = { SMA, SZA, SNL, SKP, CLA, 0 }, *oprtab;
+
+	oprtab = *op & 00400 ? opr2tab : opr1tab;
+
+	for (i = 0; oprtab[i] != 0; i++) {
+		uop = *op & oprtab[i];
+		if (*op & oprtab[i] & 00377) {
+			*op &= ~oprtab[i] | 07400;
+			return (uop);
+		}
+	}
+
+	return (NOP);
 }
 
 /*
