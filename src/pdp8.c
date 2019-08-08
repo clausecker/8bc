@@ -1,4 +1,4 @@
-/* pdp8.c -- instruction selection */
+/* pdp8.c -- high level ASM interface */
 
 #include <stdio.h>
 #include <string.h>
@@ -24,16 +24,24 @@
  *     cleared by pop(), writeback(), and acclear() and carefully
  *     managed by lda().
  */
-static struct expr acstate = { RCONST | 0, "" };
-char dirty = 0;
+struct expr acstate = { RCONST | 0, "" };
+static char dirty = 0;
 
-/* acstate templates */
-static const struct expr zero = { RCONST | 0, "" };
-static const struct expr random = { RANDOM, "" };
+/*
+ * if dirty is set, write the content of AC to acstate and clear the
+ * dirty flag.
+ */
+static void
+writeback(void)
+{
+	if (dirty) {
+		struct expr e = acstate;
 
-/* forward declarations */
-static void writeback(void);
-static void isel(int, const struct expr *);
+		isel(DCA, &e);
+		dirty = 0;
+		isel(TAD, &e);
+	}
+}
 
 extern void
 push(struct expr *e)
@@ -57,22 +65,6 @@ pop(struct expr *e)
 		dirty = 0;
 
 	emitpop(e);
-}
-
-/*
- * if dirty is set, write the content of AC to acstate and clear the
- * dirty flag.
- */
-static void
-writeback(void)
-{
-	if (dirty) {
-		struct expr e = acstate;
-
-		isel(DCA, &e);
-		dirty = 0;
-		isel(TAD, &e);
-	}
 }
 
 extern struct expr
@@ -179,21 +171,8 @@ extern void
 opr(int op)
 {
 	/* simplify case distinction */
-	switch (op) {
-	case OPR2:
-		op = NOP;
-		/* FALLTHROUGH */
-
-	case NOP:
-		break;
-
-	case OPR2 | CLA:
-		op = CLA;
-		/* FALLTHROUGH */
-
-	default:
+	if (op != NOP && op != OPR2)
 		writeback();
-	}
 
 	isel(op, NULL);
 }
@@ -210,173 +189,4 @@ catchup(void)
 {
 	writeback();
 	isel(CUP, NULL);
-}
-
-/*
- * Peel instructions off op until NOP remains.  The instructions are
- * returned in the following order:
- *
- * group 1: CLA, CLL, CMA, CML, IAC, RAR/RAL/RTR/RTL/BSW
- * group 2: SMA, SZA, SNL, SKP, CLA
- *
- * the returned micro instruction is then stripped off op.  When no bit
- * remains, NOP is returned.
- */
-static int
-peelopr(int *op)
-{
-	int i, uop;
-	static const unsigned short
-	    opr1tab[] = { CLA, CLL, CMA, CML, IAC, RTR | RTL, 0 },
-	    opr2tab[] = { SMA, SZA, SNL, SKP, CLA, 0 }, *oprtab;
-
-	oprtab = *op & 00400 ? opr2tab : opr1tab;
-
-	for (i = 0; oprtab[i] != 0; i++) {
-		uop = *op & oprtab[i];
-		if (*op & oprtab[i] & 00377) {
-			*op &= ~oprtab[i] | 07400;
-			return (uop);
-		}
-	}
-
-	return (NOP);
-}
-
-/*
- * instruction selection state machine.
- *
- * Compute the effect of instruction op with operand e and remember it.
- * Update acstate to the new content of AC.  Possible emit code.
- *
- * Three pseudo instructions exist to manipulate the state machine:
- *
- * CUP "catch up" -- emit all deferred instructions such that the
- *     the current machine state corresponds to the simulated state.
- *     This pseudo-instruction is emitted whenever isel is circumvented
- *     to emit code or data into the assembly file directly.
- *
- * RST "reset" -- forget all deferred instructions and reset the state
- *     machine to a clear accumulator.  This is used at the beginning of
- *     functions and after labels that are only reachable by jumping to
- *     them.
- *
- * RND "AC state random" -- forget any knowledge about what AC contains
- *     and assume that its contents are unpredictable.  This is used
- *     whenever isel is circumvented such that AC may have been
- *     modified.
- */
-enum { MAXDEFER = 10, }; /* dummy value */
-static void
-isel(int op, const struct expr *e)
-{
-	/* an instruction with a corresponding operand. */
-	struct isn {
-		struct expr e;
-		unsigned short op;
-	};
-
-	/*
-	 * deferred instructions.  If these instructions were emitted,
-	 * the state of the machine would match the expected state.
- 	 */
-	static struct isn deferrals[MAXDEFER];
-	static unsigned char ndeferred = 0;
-
-	/* machine states */
-	enum {
-		ACCONST, /* AC holds a constant, L random */
-		ACRANDOM, /* AC and L hold unknown values */
-		SKIPABLE, /* next instruction might be skipped */
-	};
-
-	static unsigned char state = ACCONST, skipstate;
-	static unsigned short lac;
-	static unsigned char needsclear = 0, ldefined = 0;
-
-	/* first, handle pseudo instructions */
-	switch (op) {
-	case CUP:
-		goto flush;
-
-	case RST:
-		needsclear = 0;
-		ndeferred = 0;
-		state = ACCONST;
-		lac = 0;
-		acstate = zero;
-		return;
-
-	case RND:
-		ndeferred = 0;
-		state = ACRANDOM;
-		acstate = random;
-		return;
-
-	default:
-		/* not a pseudo instruction */
-		;
-	}
-
-	/* defer current instruction */
-	deferrals[ndeferred].op = op;
-	deferrals[ndeferred].e = e != NULL ? *e : zero;
-
-	/* process state machine */
-	switch (state) {
-	/*
-	 * Invariant: 1--3 instruction deferred.  The deferred
-	 * instruction do the following:
-	 *
-	 * 1. if needsclear, AC is cleared.
-	 * 2. lac is loaded into L:AC.
-	 * 3. op/e is executed.
-	 */
-	case ACCONST:
-		switch (op & 07000) {
-		case AND:
-			if (!isconst(e->value))
-				goto indeterminate;
-
-			lac &= 010000 | e->value & 07777;
-			break;
-
-		case TAD:
-			if (!isconst(e->value))
-				goto indeterminate;
-
-			lac += e->value & 07777;
-			lac &= 017777;
-			break;
-
-		case ISZ:
-			skipstate = state;
-			state = SKIPABLE;
-			return;
-
-		case DCA:
-			/* TODO: handling applies to most states */
-			needsclear = 0;
-			ldefined = 0;
-			state = ACCONST;
-			lac = 0;
-			goto flush;
-
-		case JMP:
-			goto flush;
-
-		case OPR:
-			for (;;) switch (peelopr(&op)) {
-			case NOP:
-				break;
-			}
-		}
-
-		/* TODO */
-
-	case ACRANDOM:
-	case SKIPABLE:
-		/* TODO */
-		abort();
-	}
 }

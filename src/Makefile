@@ -4,7 +4,7 @@ CC=cc -std=c99 -D_POSIX_C_SOURCE=200809L
 CFLAGS=-Os -g -Wall -Wno-parentheses -Wno-missing-braces
 YFLAGS=-d
 
-OBJ=asm.o codegen.o data.o error.o lexer.o main.o name.o parser.o pdp8.o
+OBJ=asm.o codegen.o data.o error.o isel.o lexer.o main.o name.o parser.o pdp8.o
 
 all: 8bc 8bc1
 

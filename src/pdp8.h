@@ -168,7 +168,7 @@ extern struct expr r2lval(const struct expr *);
 extern struct expr l2rval(const struct expr *);
 
 /*
- * Call frame management.
+ * Machine state management.
  *
  * push(expr)
  *     Generate an expression referring to the content of AC.  This
@@ -182,9 +182,14 @@ extern struct expr l2rval(const struct expr *);
  *     overwritten with EXPIRED to prevent accidental reuse.  If expr
  *     is not on the stack, this does nothing.  This has no effect on
  *     the content of AC.
+ *
+ * acstate
+ *     The expression that is currently loaded into AC, if any.  If
+ *     nothing is in AC, acstate.value is RANDOM.
  */
 extern void push(struct expr *);
 extern void pop(struct expr *);
+extern struct expr acstate;
 
 /*
  * State management.

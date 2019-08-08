@@ -1,4 +1,26 @@
 /*
+ * Compute the effect of instruction op with operand e and remember it.
+ * Update acstate to the new content of AC.  Possibly emit code.  The
+ * instructions JMS, IOT, and OSR, and HLT may not be given.
+ *
+ * CUP "catch up" -- emit all deferred instructions such that the
+ *     the current machine state corresponds to the simulated state.
+ *     This pseudo-instruction is emitted whenever isel is circumvented
+ *     to emit code or data into the assembly file directly.
+ *
+ * RST "reset" -- forget all deferred instructions and reset the state
+ *     machine to a clear accumulator.  This is used at the beginning of
+ *     functions and after labels that are only reachable by jumping to
+ *     them.
+ *
+ * RND "AC state random" -- forget any knowledge about what AC contains
+ *     and assume that its contents are unpredictable.  This is used
+ *     whenever isel is circumvented such that AC may have been
+ *     modified.
+ */
+extern void isel(int, struct expr *);
+
+/*
  * Emit the PDP-8 instruction isn.  Unless isn is an OPR instruction,
  * e is used as an argument to the instruction with an appropriate
  * addressing mode.
