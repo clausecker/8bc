@@ -280,6 +280,7 @@ opr1(char *buf, int op)
  *
  *    any of SMA SZA SNL
  * or any of SPA SNA SZL
+ * or SKP
  * and a CLA.
  *
  * It is assumed that op refers to a group 2 microcoded instruction.
@@ -297,6 +298,10 @@ opr2(char *buf, int op)
 	for (i = 0; i < 3; i++)
 		if (op & 00020 << i)
 			strncat(buf, mnemo[skp][i], 4);
+
+	/* if skp but no bit is set, emit SKP */
+	if ((op & (SPA | SNA | SZL)) == SKP)
+		strcpy(buf, "SKP ");
 
 	if ((op & CLA) == CLA)
 		strcat(buf, "CLA ");
