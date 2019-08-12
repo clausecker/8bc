@@ -18,7 +18,7 @@
  *     whenever isel is circumvented such that AC may have been
  *     modified.
  */
-extern void isel(int, struct expr *);
+extern void isel(int, const struct expr *);
 
 /*
  * Emit the PDP-8 instruction isn.  Unless isn is an OPR instruction,

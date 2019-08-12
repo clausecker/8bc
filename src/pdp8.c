@@ -164,7 +164,8 @@ lda(const struct expr *e)
 	if (acstate.value == e->value)
 		return;
 
-	isel(LDA, e);
+	isel(CLA, NULL);
+	isel(TAD, e);
 }
 
 extern void

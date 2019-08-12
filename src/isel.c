@@ -72,7 +72,7 @@ peelopr(int *op)
 
 	for (i = 0; oprtab[i] != 0; i++) {
 		uop = *op & oprtab[i];
-		if (*op & oprtab[i] & 00377) {
+		if (uop & 00377) {
 			*op &= ~oprtab[i] | 07400;
 			return (uop);
 		}
@@ -88,7 +88,7 @@ static void
 defer(int op, struct expr *e)
 {
 	if (ndefer == MAXDEFER)
-		fatal(NULL, "defer stack overflow);
+		fatal(NULL, "defer stack overflow");
 
 	deferred[ndefer].op = op;
 	deferred[ndefer].e = *e;
@@ -110,7 +110,7 @@ undefer(void)
 	have = want;
 }
 
-static void
+extern void
 isel(int op, const struct expr *e)
 {
 	/* first, catch special instructions */
@@ -144,5 +144,8 @@ isel(int op, const struct expr *e)
 	case NORMAL:
 	case DOSKIP:
 	case SKIPABLE:
+		;
 	}
+
+	emitisn(op, e);
 }
