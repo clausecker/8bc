@@ -12,27 +12,23 @@
 #include "name.h"
 
 /*
- * The content of the L:AC register and two bytes telling us what we
+ * The content of the L:AC register and a byte telling us what we
  * know about the contents of L and AC.  Two ac structures are kept
  * track of: the have state is the state AC is in before deferred
  * instructions are applied, want is after deferred instructions are
  * applied.
  */
+enum {
+	/* known values */
+	LKNOWN = 1 << 0,  /* L is known to hold the value in lac */
+	LANY = 1 << 1,    /* we don't care what value L holds */
+	ACKNOWN = 1 << 2, /* AC is known to hold the value in lac */
+};
+
 static struct ac {
 	unsigned short lac;
-	unsigned char lknown, acknown;
-} have = { 0, 0, 1 }, want = { 0, 0, 1 };
-
-enum {
-	/* lknown values */
-	LRANDOM = 0, /* L holds a random value */
-	LKNOWN = 1,  /* L holds the value in lac */
-	LANY = 2,    /* we don't care what value L holds */
-
-	/* acknown values */
-	ACRANDOM = 0, /* AC holds a random value */
-	ACKNOWN = 1, /* AC holds the value in lac */
-};
+	unsigned char known;
+} have = { 0, ACKNOWN | LANY }, want = { 0, ACKNOWN | LANY };
 
 /*
  * The list of deferred instructions.  These instructions, when
@@ -142,8 +138,9 @@ normalsel(int op, const struct expr *e)
 {
 	/*
 	 * must_emit contains 0 if all effects of op can be computed by
-	 * the optimiser, 1 otherwise.  If must_emit is 1, we have
-	 * to emit all deferred instructions as well as op.
+	 * the optimiser, 1 otherwise.  If must_emit & 1, we have
+	 * to emit all deferred instructions as well as op.  If
+	 * must_emit & 2, we also need to set acstate to 2.
 	 */
 	int must_emit = 0;
 	int v;
@@ -152,43 +149,41 @@ normalsel(int op, const struct expr *e)
 
 	switch (op & 07000) {
 	case AND:
-		if (want.acknown == ACKNOWN && isconst(v))
+		if (want.known & ACKNOWN && isconst(v))
 			want.lac &= 010000 | val(v);
 		else {
-			acstate = random;
-			must_emit = 1;
-			want.acknown = ACRANDOM;
+			must_emit |= 3;
+			want.known &= ~ACKNOWN;
 		}
 
 		break;
 
 	case TAD:
-		if (want.acknown == ACKNOWN && isconst(v))
+		if (want.known & ACKNOWN && isconst(v))
 			want.lac = 017777 & want.lac + val(v);
 		else {
-			acstate = random;
-			must_emit = 1;
-			if (want.lknown == LKNOWN && (want.acknown != ACKNOWN || (want.lac & 007777) != 0))
-				want.lknown = LRANDOM;
+			must_emit |= 3;
+			if (want.known & LKNOWN && (~want.known & ACKNOWN || (want.lac & 007777) != 0))
+				want.known &= ~LKNOWN;
 
-			want.acknown = ACRANDOM;
+			want.known &= ~ACKNOWN;
 		}
 
 		break;
 
 	case ISZ:
 		skipstate = SKIPABLE;
-		must_emit = 1;
+		must_emit |= 1;
 		break;
 
 	case DCA:
-		must_emit = 1;
+		must_emit |= 1;
 		want.lac &= 010000;
-		want.acknown = ACKNOWN;
+		want.known |= ACKNOWN;
 		break;
 
 	case JMP:
-		must_emit = 1;
+		must_emit |= 1;
 		break;
 
 	case OPR: {
@@ -201,91 +196,88 @@ normalsel(int op, const struct expr *e)
 		for (;;) switch (peelopr(&o)) {
 		case CLA:
 			will.lac &= ~007777;
-			will.acknown = ACKNOWN;
+			will.known |= ACKNOWN;
 			break;
 
 		case CLL:
 			will.lac &= ~010000;
-			will.lknown = LKNOWN;
+			will.known |= LKNOWN;
+			will.known &= ~LANY;
 			break;
 
 		case CMA:
-			if (will.acknown == ACKNOWN)
+			if (will.known & ACKNOWN)
 				will.lac ^= 007777;
 			else
-				must_emit = 1;
+				must_emit |= 3;
 			break;
 
 		case CML:
-			if (will.lknown == LRANDOM)
-				must_emit = 1;
+			if ((will.known & (LKNOWN | LANY)) == 0)
+				must_emit |= 1;
 			else
 				will.lac ^= 010000;
 			break;
 
 		case RAR:
-			if (will.acknown == ACKNOWN && will.lknown != LRANDOM) {
+			if (will.known & ACKNOWN && will.known & LKNOWN) {
 				will.lac = will.lac >> 1 | will.lac << 12 & 010000;
-				will.lknown = LKNOWN;
+				will.known &= ~LANY;
 			} else {
-				will.acknown = ACRANDOM;
-				will.lknown = LRANDOM;
-				must_emit = 1;
+				will.known = 0;
+				must_emit |= 3;
 			}
 
 			break;
 
 		case RTR:
-			if (will.acknown == ACKNOWN && will.lknown != LRANDOM) {
+			if (will.known & ACKNOWN && will.known & LKNOWN) {
 				will.lac = will.lac >> 2 | will.lac << 11 & 014000;
-				will.lknown = LKNOWN;
+				will.known &= ~LANY;
 			} else {
-				will.acknown = ACRANDOM;
-				will.lknown = LRANDOM;
-				must_emit = 1;
+				will.known = 0;
+				must_emit |= 3;
 			}
 
 			break;
 
 		case RAL:
-			if (will.acknown == ACKNOWN && will.lknown != LRANDOM) {
+			if (will.known & ACKNOWN && will.known & LKNOWN) {
 				will.lac = will.lac << 1 & 017776 | will.lac >> 12;
-				will.lknown = LKNOWN;
+				will.known &= ~LANY;
 			} else {
-				will.acknown = ACRANDOM;
-				will.lknown = LRANDOM;
-				must_emit = 1;
+				will.known = 0;
+				must_emit |= 3;
 			}
 
 			break;
 
 		case RTL:
-			if (will.acknown == ACKNOWN && will.lknown != LRANDOM) {
+			if (will.known & ACKNOWN && will.known & LKNOWN) {
 				will.lac = will.lac << 2 & 017774 | will.lac >> 11;
-				will.lknown = LKNOWN;
+				will.known &= ~LANY;
 			} else {
-				will.acknown = ACRANDOM;
-				will.lknown = LRANDOM;
-				must_emit = 1;
+				will.known = 0;
+				must_emit |= 3;
 			}
 
 			break;
 
 		case IAC:
-			if (will.acknown == ACKNOWN) {
-				if (will.lknown == LRANDOM && (will.lac & 07777) == 07777)
-					must_emit = 1;
+			if (will.known & ACKNOWN) {
+				if (~will.known & LKNOWN && (will.lac & 07777) == 07777)
+					must_emit |= 1;
 
 				will.lac = will.lac + 1 & 017777;
 			} else
-				must_emit = 1;
+				must_emit |= 3;
 			break;
 
 		case SMA:
 			if (skipstate == DOSKIP)
 				break;
 
-			if (will.acknown == ACRANDOM) {
+			if (~will.known == ACKNOWN) {
 				skipstate = SKIPABLE;
 				must_emit = 1;
 			} else if (will.lac & 004000) {
@@ -299,7 +291,7 @@ normalsel(int op, const struct expr *e)
 			if (skipstate == DOSKIP)
 				break;
 
-			if (will.acknown == ACRANDOM) {
+			if (~will.known & ACKNOWN) {
 				skipstate = SKIPABLE;
 				must_emit = 1;
 			} else if ((will.lac & 007777) == 0) {
@@ -313,10 +305,10 @@ normalsel(int op, const struct expr *e)
 			if (skipstate == DOSKIP)
 				break;
 
-			if (will.lknown == LRANDOM) {
+			if (~will.known & LKNOWN) {
 				skipstate = SKIPABLE;
 				must_emit = 1;
-			} else if ((will.lac & 010000)) {
+			} else if (will.lac & 010000) {
 				skipstate = DOSKIP;
 				must_emit = 0;
 			}
@@ -339,15 +331,15 @@ normalsel(int op, const struct expr *e)
 			fatal(NULL, "unregonised OPR instruction: %04o", op & 07777);
 		}
 
-	peeled:	/* figure out if the instruction was a no-op.  If yes, ignore it. */
-		if (!must_emit && skipstate == NORMAL
-		    && want.lknown == will.lknown
-		    && want.acknown == will.acknown
-		    && (will.lknown != LKNOWN || (want.lac & 010000) == (will.lac & 010000))
-		    && (will.acknown != ACKNOWN || (want.lac & 007777) == (will.lac & 007777)))
+		/* figure out if the instruction was a no-op.  If yes, ignore it. */
+	peeled:	if (!must_emit && skipstate == NORMAL
+		    && (want.known & (LKNOWN | ACKNOWN)) == (will.known & (LKNOWN | ACKNOWN))
+		    && (~will.known & LKNOWN || (want.lac & 010000) == (will.lac & 010000))
+		    && (~will.known & ACKNOWN || (want.lac & 007777) == (will.lac & 007777)))
 			return;
 
 		want = will;
+
 		break;
 	}
 
@@ -356,7 +348,7 @@ normalsel(int op, const struct expr *e)
 		fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 	}
 
-	if (must_emit) {
+	if (must_emit & 1) {
 		undefer();
 		emitisn(op, e);
 	/* non-skipping instruction */
@@ -367,10 +359,11 @@ normalsel(int op, const struct expr *e)
 	} else
 		defer(op, e);
 
-	if (want.acknown == ACKNOWN) {
+	if (want.known & ACKNOWN) {
 		acstate = zero;
 		acstate.value = RCONST | want.lac & 007777;
-	}
+	} else if (must_emit & 2)
+		acstate = random;
 }
 
 /*
@@ -383,8 +376,7 @@ skipsel(int op, const struct expr *e)
 	/* TODO: apply optimisations */
 	acstate = random;
 	skipstate = NORMAL;
-	want.lknown = LRANDOM;
-	want.acknown = ACRANDOM;
+	want.known = 0;
 	undefer();
 	emitisn(op, e);
 }
@@ -401,20 +393,18 @@ isel(int op, const struct expr *e)
 	case RST:
 		ndefer = 0;
 		want.lac = 0;
-		want.lknown = LANY;
-		want.acknown = ACKNOWN;
+		want.known = LANY | ACKNOWN;
 		have = want;
 		skipstate = NORMAL;
 		return;
 
 	case RND:
-		want.lknown = LANY;
-		want.acknown = ACRANDOM;
+		want.known = LANY;
 		undefer();
 		return;
 
 	case LIV:
-		want.lknown = LANY;
+		want.known |= LANY;
 		return;
 
 	default:
