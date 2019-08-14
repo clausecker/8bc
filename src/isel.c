@@ -168,7 +168,9 @@ normalsel(int op, const struct expr *e)
 		else {
 			acstate = random;
 			must_emit = 1;
-			want.lknown = want.lknown == LANY ? LANY : LRANDOM;
+			if (want.lknown == LKNOWN && (want.acknown != ACKNOWN || (want.lac & 007777) != 0))
+				want.lknown = LRANDOM;
+
 			want.acknown = ACRANDOM;
 		}
 
