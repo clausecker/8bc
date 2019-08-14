@@ -121,13 +121,149 @@ defer(int op, const struct expr *e)
 }
 
 /*
+ * Find a sequence of up to 2 OPR instructions that produce lac
+ * in L:AC.  If such a sequence is found, defer it and return 1.
+ * Otherwise, return 0.
+ */
+static int
+findseq(int lac)
+{
+	/* TODO */
+	return (0);
+}
+
+/*
  * Assuming what the deferred instructions do is just computing
  * constants, fold the computations into at most 2 instructions.
+ *
+ * invariant: if ACKNOWN or LKNOWN are set in have, they are also
+ * set in want.
  */
 static void
 fold(void)
 {
-	/* TODO */
+	/*
+	 * sequence of instruction to generate constants such that
+	 * L is preserved.  The first entry is the constant to be
+	 * generated, the other two entries are the two OPR instructions
+	 * used (0 if there is only one).  The table is terminated with
+	 * a 0 as the first instruction.
+	 */
+	static const unsigned short lpresseq[][3] = {
+		00000, CLA,             0,
+		00001, CLA | IAC,       0,
+		00002, CLA | IAC,       IAC,
+		00003, CLA | IAC | RAR, IAC | RAL,
+		00004, CLA | RTR,       IAC | RTL,
+		00006, CLA | RTR,       STL | IAC | RTL,
+		02000, CLA | RTL,       STL | RTR,
+		03777, STA | RAL,       CLL | RAR,
+		04000, CLA | RAL,       STL | RAR,
+		06000, CLA | RTL,       STL | IAC | RTR,
+		06777, STA | RTL,       CLL | RTR,
+		07775, STA | RTR,       CLL | RTL,
+		07776, STA | RAR,       CLL | RAL,
+		07777, STA,             0,
+		00000, 0,               0,
+	};
+
+	int wantac, haveac, i;
+	struct expr e = { 0, "" };
+
+	/* discard deferred instructions */
+	ndefer = 0;
+
+	wantac = want.lac & 07777;
+	haveac = have.lac & 07777;
+
+	/* AC already set up? */
+	if (~want.known & ACKNOWN || have.known & ACKNOWN && wantac == haveac) {
+		/* need to set up L? */
+		if (want.known & LKNOWN && ~want.known & LANY)
+			defer(want.lac & 010000 ? STL: CLL, NULL);
+
+		return;
+	}
+
+	/* otherwise, what about L? */
+	switch (want.known & (LKNOWN | LANY)) {
+	case 0:	/* nothing known, must be preserved: produce AC without touching L */
+		for (i = 0; lpresseq[i][1] != 0; i++)
+			if (lpresseq[i][0] == wantac)
+				goto seqfound;
+
+		if (have.known & ACKNOWN && haveac <= wantac) {
+			e.value = RCONST | wantac - haveac;
+			defer(TAD, &e);
+		} else if (have.known & ACKNOWN && (~haveac & wantac) == 0) {
+			e.value = RCONST | wantac;
+			defer(AND, &e);
+		} else {
+			defer(CLA, NULL);
+			e.value = RCONST | wantac;
+			defer(TAD, &e);
+		}
+
+		break;
+
+	seqfound:
+		defer(lpresseq[i][1], NULL);
+		if (lpresseq[i][2] != 0)
+			defer(lpresseq[i][2], NULL);
+
+		break;
+
+	case LANY:
+	case LKNOWN | LANY: /* don't care about L */
+		if (findseq(wantac &~ 010000) || findseq(wantac | 010000)) {
+			want.known |= LKNOWN;
+			break;
+		}
+
+		if (have.known & ACKNOWN) {
+			e.value = RCONST | wantac - haveac;
+			defer(TAD, &e);
+			want.lac = have.lac + wantac - haveac & 017777;
+			want.known &= ~LKNOWN;
+			want.known |= have.known & LKNOWN;
+		} else {
+			defer(CLA | CLL, NULL);
+			e.value = RCONST | wantac;
+			defer(TAD, &e);
+			want.lac &= ~010000;
+			want.known |= LKNOWN;
+		}
+
+		break;
+
+	case LKNOWN: /* must set L appropriate */
+		if (findseq(want.lac))
+			break;
+
+		/* if AC is known, we need to check if adding wantac - haveac flips L correctly */
+		if (have.known & ACKNOWN) {
+			/* preserve L or flip L? */
+			if ((want.lac & 010000) == (have.lac & 010000)) {
+				if (haveac <= wantac) {
+					e.value = RCONST | wantac - haveac;
+					defer(TAD, &e);
+				} else if ((~haveac & wantac) == 0) {
+					e.value = RCONST | wantac;
+					defer(AND, &e);
+				} else
+					goto cla_tad_sequence;
+			} else if (haveac > wantac) {
+				e.value = RCONST | wantac - haveac;
+				defer(TAD, &e);
+			} else
+				goto cla_tad_sequence;
+		} else {
+		cla_tad_sequence:
+			defer(want.lac & 010000 ? CLA | STL : CLA | CLL, NULL);
+			e.value = RCONST | wantac;
+			defer(TAD, &e);
+		}
+	}
 }
 
 /*
