@@ -69,7 +69,9 @@ enum {
  * Generate code for the specified PDP-8 instruction.  The function
  * argument is provided as an argument to the instruction with an
  * appropriate addressing mode.  lda() is a convenience function
- * that clears AC and then adds the desired value.
+ * that clears AC, adds the desired value, and then sets L to an
+ * indeterminate value.  ldconst() is a convenience function that
+ * loads a constant into AC.
  *
  * It is not guaranteed that the desired instruction is actually
  * emitted as the optimiser may replace it with another
@@ -81,7 +83,9 @@ extern void isz(const struct expr *);
 extern void dca(const struct expr *);
 extern void jms(const struct expr *);
 extern void jmp(const struct expr *);
+
 extern void lda(const struct expr *);
+extern void ldconst(int);
 
 /* opcodes */
 enum {
@@ -99,6 +103,7 @@ enum {
 	CUP = 010000, /* catch up */
 	RST = 011000, /* discard deferred state, clear AC */
 	RND = 012000, /* mark AC state as unknown */
+	LIV = 013000, /* set L to an indeterminate value */
 };
 
 /*

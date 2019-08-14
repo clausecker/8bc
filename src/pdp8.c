@@ -158,6 +158,15 @@ jmp(const struct expr *e)
 }
 
 extern void
+ldconst(int c)
+{
+	struct expr e = { 0, "" };
+
+	e.value = c;
+	lda(&e);
+}
+
+extern void
 lda(const struct expr *e)
 {
 	/* omit duplicate loads */
@@ -166,6 +175,7 @@ lda(const struct expr *e)
 
 	isel(CLA, NULL);
 	isel(TAD, e);
+	isel(LIV, NULL);
 }
 
 extern void

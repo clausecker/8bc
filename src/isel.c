@@ -413,6 +413,10 @@ isel(int op, const struct expr *e)
 		undefer();
 		return;
 
+	case LIV:
+		want.lknown = LANY;
+		return;
+
 	default:
 		/* not a pseudo instruction */
 		;

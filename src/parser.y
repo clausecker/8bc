@@ -173,24 +173,24 @@ statement	: AUTO auto_list ';' statement
 		| label ':' statement
 		| { $$.value = beginscope(); } '[' statement_list ']' { endscope($1.value); }
 		| IF if_control statement %prec ELSE {
-			opr(CLA);
+			ldconst(0);
 			putlabel(&$2);
 		}
 		| IF if_control statement ELSE {
 			newlabel(&$$);
-			opr(CLA);
+			ldconst(0);
 			jmp(&$$);
 			putlabel(&$2);
 		} statement {
-			opr(CLA);
+			ldconst(0);
 			putlabel(&$5);
 		}
 		| WHILE {
 			newlabel(&$$);
-			opr(CLA);
+			ldconst(0);
 			putlabel(&$$);
 		} if_control statement {
-			opr(CLA);
+			ldconst(0);
 			jmp(&$2);
 			putlabel(&$3);
 		}
@@ -199,7 +199,7 @@ statement	: AUTO auto_list ';' statement
 			error("SWITCH", "not implemented");
 		}
 		| GOTO expr ';' {
-			opr(CLA);
+			ldconst(0);
 			jmp(&$2);
 			pop(&$2);
 		}
@@ -226,7 +226,7 @@ if_control	: '(' expr ')' {
 label		: NAME {
 			newlabel(&$1);
 			declare(&$1);
-			opr(CLA);
+			ldconst(0);
 			putlabel(&$1);
 		}
 		| CASE CONSTANT { error("CASE", "not implemented"); }
@@ -310,7 +310,7 @@ expr		: NAME {
 			push(&$$);
 		}
 		| expr DEC {
-			opr(STA);
+			ldconst(07777);
 			tad(&$1);
 			dca(&$1);
 			lda(&$1);
@@ -324,7 +324,7 @@ expr		: NAME {
 			$$ = $2;
 		}
 		| DEC expr {
-			opr(STA);
+			ldconst(07777);
 			tad(&$2);
 			dca(&$2);
 			$$ = $2;
