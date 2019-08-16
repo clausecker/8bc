@@ -120,6 +120,15 @@ defer(int op, const struct expr *e)
 	ndefer++;
 }
 
+/* sequences for findseq */
+static const unsigned short dummyseq[1][3] = { 0, 0, 0 };
+#define seq1clearl dummyseq
+#define seq1setl dummyseq
+#define seq1preservel dummyseq
+#define seq2clearl dummyseq
+#define seq2setl dummyseq
+#define seq2preservel dummyseq
+
 /*
  * Find a sequence of up to 2 OPR instructions that produce lac
  * in L:AC.  If such a sequence is found, defer it and return 1.
@@ -128,7 +137,17 @@ defer(int op, const struct expr *e)
 static int
 findseq(const unsigned short seq[][3], int lac)
 {
-	/* TODO */
+	int i;
+
+	for (i = 0; seq[i][1] != 0; i++)
+		if (seq[i][0] == lac) {
+			defer(seq[i][1], NULL);
+			if (seq[i][2] != 0)
+				defer(seq[i][2], NULL);
+
+			return (1);
+		}
+
 	return (0);
 }
 
@@ -200,7 +219,7 @@ fold(void)
 		return;
 
 	/* strategy 4--6: 2 instruction OPR sequences */
-	if (clearl && findseq(clear2setl, wantac)) {
+	if (clearl && findseq(seq2clearl, wantac)) {
 		want.known |= LKNOWN;
 		want.lac &= ~010000;
 		return;
