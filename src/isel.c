@@ -172,15 +172,6 @@ fold(void)
 
 	acknown = have.known & ACKNOWN;
 
-	/* AC already set up? */
-	if (~want.known & ACKNOWN || acknown && wantac == haveac) {
-		/* need to set up L? */
-		if (want.known & LKNOWN && ~want.known & LANY)
-			defer(want.lac & 010000 ? STL : CLL, NULL);
-
-		return;
-	}
-
 	/* determine possible strategies */
 	if (want.known & LANY) {
 		preservel = 1;
@@ -201,6 +192,15 @@ fold(void)
 		}
 	} else
 		preservel = 1;
+
+	/* AC already set up? */
+	if (~want.known & ACKNOWN || acknown && wantac == haveac) {
+		/* need to set up L? */
+		if (!preservel)
+			defer(want.lac & 010000 ? STL : CLL, NULL);
+
+		return;
+	}
 
 	/* strategy 1--3: 1 instruction OPR sequences */
 	if (clearl && findseq(seq1clearl, wantac)) {
