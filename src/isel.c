@@ -453,6 +453,17 @@ normalsel(int op, const struct expr *e)
 
 			break;
 
+		case BSW:
+			if (will.known & ACKNOWN)
+				will.lac = will.lac & 010000 |
+				    will.lac << 6 & 007700 | will.lac >> 6 & 000077;
+			else {
+				will.known = 0;
+				must_emit |= 3;
+			}
+
+			break;
+
 		case IAC:
 			if (will.known & ACKNOWN) {
 				if (~will.known & LKNOWN && (will.lac & 07777) == 07777)

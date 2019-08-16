@@ -584,35 +584,133 @@ door(struct expr *q, struct expr *a, struct expr *b, int op, int as)
 static void
 doshift(struct expr *q, struct expr *a, struct expr *b, int op, int as)
 {
-	struct expr again = { 0, "" }, end = { 0, "" }, counter;
+	if (isconst(b->value)) {
+		static const unsigned short masks[2][11] = {
+			00000, 00000, 07770, 07760, 07740, 07700, 07600, 07400, 07000, 06000, 000000,
+			00000, 00000, 00777, 00377, 00177, 00077, 00037, 00017, 00007, 00003, 000000,
+		};
+		struct expr mask = { 0, "" }, zero = { RCONST | 0, "" };
+		int v;
 
-	/*
-	 * the loop goes like this:
-	 *
-	 * counter = ~b
-	 * while (++counter)
-	 *     a << = 1;
-	 */
-	newlabel(&again);
-	newlabel(&end);
+		v = val(b->value);
+		pop(b);
 
-	lda(b);
-	pop(b);
-	opr(CMA);
-	push(&counter);
-	lda(a);
-	jmp(&end);
-	putlabel(&again);
-	opr(CLL | op);
-	putlabel(&end);
-	isz(&counter);
-	jmp(&again);
-	pop(&counter);
-	if (as) {
-		dca(a);
-		*q = *a;
+		/* trivial cases */
+		if (v == 0) {
+			*q = *a;
+			return;
+		} else if (v >= 12) {
+			if (as) {
+				ldconst(0);
+				dca(a);
+				*q = *a;
+			} else {
+				pop(a);
+				*q = zero;
+			}
+
+			return;
+		}
+
+		lda(a);
+		if (!as)
+			pop(a);
+
+		/* manually unroll the loop */
+		switch (v) {
+		case 1:
+			opr(CLL | op);
+			break;
+
+		case 2:
+			opr(CLL | op);
+			opr(CLL | op);
+			break;
+
+		case 3:
+			opr(CLL | BSW | op);
+			opr(op);
+			break;
+
+		case 4:
+			opr(CLL | BSW | op);
+			opr(BSW | op);
+			break;
+
+		case 5:
+			opr(CLL | BSW | op);
+			opr(BSW | op);
+			opr(op);
+			break;
+
+		case 6:
+			opr(BSW);
+			break;
+
+		case 7:
+			opr(BSW);
+			opr(CLL | op);
+			break;
+
+		case 8:
+			opr(BSW);
+			opr(CLL | BSW | op);
+			break;
+
+		case 9:
+			opr(CLL | BSW | op ^ 00014);
+			opr(BSW | op ^ 00014);
+			break;
+
+		case 10:
+			opr(CLL | BSW | op ^ 00014);
+			opr(op ^ 00014);
+			break;
+
+		case 11:
+			opr(CLL | op ^ 00014);
+			opr(CLA | op);
+			break;
+		}
+
+		mask.value = RCONST | masks[op == RAR][v - 1];
+		and(&mask);
+		if (as) {
+			dca(a);
+			*q = *a;
+		} else
+			push(q);
 	} else {
-		pop(a);
-		push(q);
+		struct expr again = { 0, "" }, end = { 0, "" }, counter;
+
+		/*
+		 * the loop goes like this:
+		 *
+		 * counter = ~b
+		 * while (++counter)
+		 *     a << = 1;
+		 */
+		newlabel(&again);
+		newlabel(&end);
+
+		lda(b);
+		pop(b);
+		opr(CMA);
+		push(&counter);
+		lda(a);
+		jmp(&end);
+		putlabel(&again);
+		opr(CLL | op);
+		putlabel(&end);
+		isz(&counter);
+		jmp(&again);
+		pop(&counter);
+		if (as) {
+			dca(a);
+			*q = *a;
+		} else {
+			pop(a);
+			push(q);
+		}
 	}
 }
