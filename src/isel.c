@@ -58,6 +58,7 @@ static unsigned char skipstate = NORMAL;
 /* acstate templates */
 static const struct expr zero = { RCONST | 0, "" };
 static const struct expr random = { RANDOM, "" };
+static const struct expr invalid = { INVALID, "" };
 
 /*
  * Peel instructions off op until NOP remains.  The instructions are
@@ -118,7 +119,7 @@ defer(int op, const struct expr *e)
 	}
 
 	deferred[ndefer].op = op;
-	deferred[ndefer].e = *e;
+	deferred[ndefer].e = e == NULL ? invalid : *e;
 	ndefer++;
 }
 
