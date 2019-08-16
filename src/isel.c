@@ -16,7 +16,9 @@
  * know about the contents of L and AC.  Two ac structures are kept
  * track of: the have state is the state AC is in before deferred
  * instructions are applied, want is after deferred instructions are
- * applied.
+ * applied.  If we don't know the value of L or AC in want, we know
+ * that it hasn't changed since the have state (i.e. unpredictable
+ * changes are never deferred).
  */
 enum {
 	/* known values */
@@ -121,13 +123,57 @@ defer(int op, const struct expr *e)
 }
 
 /* sequences for findseq */
+static const unsigned short seq1preservel[][3] = {
+	00000, CLA,			0,
+	00001, CLA | IAC,		0,
+	07777, STA,			0,
+	00000, 0,			0,
+};
+
+static const unsigned short seq1clearl[][3] = {
+	00000, CLA | CLL,		0,
+	00001, CLA | CLL | IAC,		0,
+	00002, CLA | STL | RTL,		0,
+	00003, CLA | STL | IAC | RAL,	0,
+	00004, CLA | CLL | IAC | RTL,	0,
+	00006, CLA | STL | IAC | RTL,	0,
+	02000, CLA | STL | RTR,		0,
+	04000, CLA | STL | RAR,		0,
+	06000, CLA | STL | IAC | RTR,	0,
+	07777, STA | CLL,		0,
+	00000, 0,			0,
+};
+
+static const unsigned short seq1setl[][3] = {
+	00000, CLA | STL,		0,
+	00001, CLA | STL | IAC,		0,
+	04000, CLA | STL | IAC | RAR,	0,
+	03777, STA | CLL | RAR,		0,
+	05777, STA | CLL | RTR,		0,
+	07775, STA | CLL | RTL,		0,
+	07776, STA | CLL | RAL,		0,
+	07777, STA | STL,		0,
+	00000, 0,			0,
+};
+
+static const unsigned short seq2preservel[][3] = {
+	00002, CLA | IAC,		IAC,
+	00003, CLA | IAC | RAR,		IAC | RAL,
+	00004, CLA | RTR,		IAC | RTL,
+	00006, CLA | RTR,		STL | IAC | RTL,
+	02000, CLA | RTL,		STL | RTR,
+	03777, STA | RAL,		CLL | RAR,
+	04000, CLA | RAL,		STL | RAR,
+	06000, CLA | RTL,		STL | IAC | RTR,
+	06777, STA | RTL,		CLL | RTR,
+	07775, STA | RTR,		CLL | RTL,
+	07776, STA | RAR,		CLL | RAL,
+	00000, 0,			0,
+};
+
 static const unsigned short dummyseq[1][3] = { 0, 0, 0 };
-#define seq1clearl dummyseq
-#define seq1setl dummyseq
-#define seq1preservel dummyseq
 #define seq2clearl dummyseq
 #define seq2setl dummyseq
-#define seq2preservel dummyseq
 
 /*
  * Find a sequence of up to 2 OPR instructions that produce lac
@@ -169,7 +215,6 @@ fold(void)
 
 	wantac = want.lac & 07777;
 	haveac = have.lac & 07777;
-
 	acknown = have.known & ACKNOWN;
 
 	/* determine possible strategies */
@@ -549,6 +594,8 @@ isel(int op, const struct expr *e)
 
 	case LIV:
 		want.known |= LANY;
+		if (skipstate == NORMAL)
+			fold();
 		return;
 
 	default:
