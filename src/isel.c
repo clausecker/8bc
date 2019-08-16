@@ -300,11 +300,17 @@ normalsel(int op, const struct expr *e)
 		if (want.known & ACKNOWN && isconst(v))
 			want.lac = 017777 & want.lac + val(v);
 		else {
-			must_emit |= 3;
+			must_emit |= 1;
 			if (want.known & LKNOWN && (~want.known & ACKNOWN || (want.lac & 007777) != 0))
 				want.known &= ~LKNOWN;
 
 			want.known &= ~ACKNOWN;
+
+			/* record content of AC if we just loaded a new value */
+			if ((want.lac & 007777) == 0)
+				acstate = *e;
+			else
+				must_emit |= 2;
 		}
 
 		break;
