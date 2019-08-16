@@ -178,7 +178,7 @@ extern struct expr l2rval(const struct expr *);
  * push(expr)
  *     Generate an expression referring to the content of AC.  This
  *     might involve allocating a new stack register for it.  The
- *     content of AC is preserved by this instruction.
+ *     content of AC is preserved by this operation, but L is not.
  *
  * pop(expr)
  *     Mark expr as no longer needed and possibly free the stack

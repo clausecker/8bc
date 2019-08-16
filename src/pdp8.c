@@ -55,6 +55,7 @@ push(struct expr *e)
 	emitpush(e);
 	acstate = *e;
 	dirty = 1;
+	isel(LIV, NULL);
 }
 
 extern void
