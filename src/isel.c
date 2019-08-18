@@ -343,20 +343,25 @@ normalsel(int op, const struct expr *e)
 		break;
 
 	case TAD:
-		if (want.known & ACKNOWN && isconst(v))
-			want.lac = 017777 & want.lac + val(v);
-		else {
-			must_emit |= 1;
-			if (want.known & LKNOWN && (~want.known & ACKNOWN || (want.lac & 007777) != 0))
-				want.known &= ~LKNOWN;
+		if (want.known & ACKNOWN) {
+			if (isconst(v)) {
+				want.lac = 017777 & want.lac + val(v);
 
-			want.known &= ~ACKNOWN;
-
-			/* record content of AC if we just loaded a new value */
-			if (want.known & ACKNOWN && (want.lac & 007777) == 0)
-				acstate = *e;
-			else
-				must_emit |= 2;
+				/* must emit this if L is unknown and needs to be flipped. */
+				if (~want.known & LKNOWN && ~want.known & LANY
+				    && (want.lac & 07777) + val(v) > 07777)
+					must_emit |= 1;
+			} else {
+				want.known &= ~ACKNOWN;
+				must_emit |= 1;
+				if ((want.lac & 007777) == 0)
+					acstate = *e;
+				else
+					must_emit |= 2;			
+			}
+		} else {
+			want.known &= ~LKNOWN;
+			must_emit |= 3;
 		}
 
 		break;
