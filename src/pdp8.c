@@ -122,10 +122,7 @@ tad(const struct expr *e)
 	}
 
 	writeback();
-	if (acstate.value != RANDOM && e->value == acstate.value)
-		isel(CLL | RAL, NULL);
-	else
-		isel(TAD, e);
+	isel(TAD, e);
 }
 
 extern void

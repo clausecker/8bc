@@ -324,7 +324,7 @@ normalsel(int op, const struct expr *e)
 	 * must_emit contains 0 if all effects of op can be computed by
 	 * the optimiser, 1 otherwise.  If must_emit & 1, we have
 	 * to emit all deferred instructions as well as op.  If
-	 * must_emit & 2, we also need to set acstate to 2.
+	 * must_emit & 2, we also need to set acstate to random.
 	 */
 	int must_emit = 0;
 	int v;
@@ -353,7 +353,7 @@ normalsel(int op, const struct expr *e)
 			want.known &= ~ACKNOWN;
 
 			/* record content of AC if we just loaded a new value */
-			if ((want.lac & 007777) == 0)
+			if (want.known & ACKNOWN && (want.lac & 007777) == 0)
 				acstate = *e;
 			else
 				must_emit |= 2;
