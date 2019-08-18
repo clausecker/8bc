@@ -372,6 +372,10 @@ normalsel(int op, const struct expr *e)
 	case ISZ:
 		skipstate = SKIPABLE;
 		must_emit |= 1;
+
+		if (acstate.value == e->value)
+			must_emit |= 2;
+
 		break;
 
 	case DCA:

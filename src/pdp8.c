@@ -133,7 +133,7 @@ extern void
 isz(const struct expr *e)
 {
 	writeback();
-	emitisn(ISZ, e);
+	isel(ISZ, e);
 }
 
 extern void
@@ -155,7 +155,7 @@ extern void
 jmp(const struct expr *e)
 {
 	catchup();
-	emitisn(JMP, e);
+	isel(JMP, e);
 }
 
 extern void
