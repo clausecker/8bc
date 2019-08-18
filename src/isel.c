@@ -351,18 +351,21 @@ normalsel(int op, const struct expr *e)
 				if (~want.known & LKNOWN && ~want.known & LANY
 				    && (want.lac & 07777) + val(v) > 07777)
 					must_emit |= 1;
-			} else {
+
+				break;
+
+				/* special case: use TAD to load a value */
+			} else if ((want.lac & 007777) == 0) {
 				want.known &= ~ACKNOWN;
 				must_emit |= 1;
-				if ((want.lac & 007777) == 0)
-					acstate = *e;
-				else
-					must_emit |= 2;			
+				acstate = *e;
+				break;
 			}
-		} else {
-			want.known &= ~LKNOWN;
-			must_emit |= 3;
 		}
+
+		/* general case: nothing can be assumed */
+		want.known &= ~LKNOWN | ~ACKNOWN;
+		must_emit |= 3;
 
 		break;
 
