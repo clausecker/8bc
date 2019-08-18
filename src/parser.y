@@ -341,8 +341,7 @@ expr		: NAME {
 			if (islval($2.value)) {
 				lda(&$2);
 				pop(&$2);
-				/* TODO: perhaps add reify */
-				push(&$2);
+				forcepush(&$2);
 			}
 
 			$$ = r2lval(&$2);

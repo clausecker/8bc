@@ -180,6 +180,10 @@ extern struct expr l2rval(const struct expr *);
  *     might involve allocating a new stack register for it.  The
  *     content of AC is preserved by this operation, but L is not.
  *
+ * forcepush(expr)
+ *     Same as push, but force a stack register to be allocated even if
+ *     an existing expr refers to the content of AC.
+ *
  * pop(expr)
  *     Mark expr as no longer needed and possibly free the stack
  *     register allocated for it.  Only the most recently
@@ -193,6 +197,7 @@ extern struct expr l2rval(const struct expr *);
  *     nothing is in AC, acstate.value is RANDOM.
  */
 extern void push(struct expr *);
+extern void forcepush(struct expr *);
 extern void pop(struct expr *);
 extern struct expr acstate;
 

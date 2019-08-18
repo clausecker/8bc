@@ -43,18 +43,22 @@ writeback(void)
 }
 
 extern void
-push(struct expr *e)
+forcepush(struct expr *e)
 {
-	if (acstate.value != RANDOM && !onstack(acstate.value)) {
-		*e = acstate;
-		return;
-	}
-
 	writeback();
 	emitpush(e);
 	acstate = *e;
 	dirty = 1;
 	isel(LIV, NULL);
+}
+
+extern void
+push(struct expr *e)
+{
+	if (acstate.value != RANDOM && !onstack(acstate.value))
+		*e = acstate;
+	else
+		forcepush(e);
 }
 
 extern void
