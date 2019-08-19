@@ -20,8 +20,7 @@ static char narg = 0;
 
 static void argpush(struct expr *);
 static void docall(struct expr *, int);
-static void docmp(struct expr *, struct expr *, struct expr *, int);
-static void doascmp(struct expr *, struct expr *, struct expr *, int);
+static void docmp(struct expr *, struct expr *, struct expr *, int, int);
 static void door(struct expr *, struct expr *, struct expr *, int, int);
 static void doshift(struct expr *, struct expr *, struct expr *, int, int);
 
@@ -420,18 +419,18 @@ expr		: NAME {
 		| expr ASSHL expr { doshift(&$$, &$1, &$3, RAL, 1); }
 		| expr SHR expr { doshift(&$$, &$1, &$3, RAR, 0); }
 		| expr ASSHR expr { doshift(&$$, &$1, &$3, RAR, 1); }
-		| expr '<' expr { docmp(&$$, &$1, &$3, SZL); }
-		| expr ASLT expr { doascmp(&$$, &$1, &$3, SZL); }
-		| expr '>' expr { docmp(&$$, &$1, &$3, SNL | SZA); }
-		| expr ASGT expr { doascmp(&$$, &$1, &$3, SNL | SZA); }
-		| expr LE expr { docmp(&$$, &$1, &$3, SZL | SNA); }
-		| expr ASLE expr { doascmp(&$$, &$1, &$3, SNA); }
-		| expr GE expr { docmp(&$$, &$1, &$3, SNL); }
-		| expr ASGE expr { doascmp(&$$, &$1, &$3, SNL); }
-		| expr EQ expr { docmp(&$$, &$1, &$3, SNA); }
-		| expr ASEQ expr { doascmp(&$$, &$1, &$3, SNA); }
-		| expr NE expr { docmp(&$$, &$1, &$3, SZA); }
-		| expr ASNE expr { doascmp(&$$, &$1, &$3, SZA); }
+		| expr '<' expr { docmp(&$$, &$1, &$3, SZL, 0); }
+		| expr ASLT expr { docmp(&$$, &$1, &$3, SZL, 1); }
+		| expr '>' expr { docmp(&$$, &$1, &$3, SNL | SZA, 0); }
+		| expr ASGT expr { docmp(&$$, &$1, &$3, SNL | SZA, 1); }
+		| expr LE expr { docmp(&$$, &$1, &$3, SZL | SNA, 0); }
+		| expr ASLE expr { docmp(&$$, &$1, &$3, SNA, 1); }
+		| expr GE expr { docmp(&$$, &$1, &$3, SNL, 0); }
+		| expr ASGE expr { docmp(&$$, &$1, &$3, SNL, 1); }
+		| expr EQ expr { docmp(&$$, &$1, &$3, SNA, 0); }
+		| expr ASEQ expr { docmp(&$$, &$1, &$3, SNA, 1); }
+		| expr NE expr { docmp(&$$, &$1, &$3, SZA, 0); }
+		| expr ASNE expr { docmp(&$$, &$1, &$3, SZA, 1); }
 		| expr '&' expr {
 			lda(&$3);
 			pop(&$3);
@@ -511,37 +510,27 @@ static void docall(struct expr *q, int argc)
 }
 
 /*
- * Perform a comparison of a and b by predicate p and store the
- * result in q.  Pop both a and b.
+ * Perform a comparison of a and b by predicate p.  If as is clear,
+ * push the result to q and pop both a and b.  Otherwise deposit the
+ * result in a, pop b, and copy a to q.
  */
 static void
-docmp(struct expr *q, struct expr *a, struct expr *b, int p)
+docmp(struct expr *q, struct expr *a, struct expr *b, int p, int as)
 {
 	lda(b);
 	pop(b);
-	opr(CIA | STL);
+	/* only set up L if we have SZL or SNL */
+	opr(p & 00020 ? CIA | STL : CIA);
 	tad(a);
-	pop(a);
+	if (!as)
+		pop(a);
 	opr(p | CLA);
 	opr(CLA | IAC);
-	push(q);
-}
-
-/*
- * Perform a comparison of a and b by predicate p and deposit the
- * result in a.  Pop b and copy a to q.
- */
-static void
-doascmp(struct expr *q, struct expr *a, struct expr *b, int p)
-{
-	lda(b);
-	pop(b);
-	opr(CIA | STL);
-	tad(a);
-	opr(p | CLA);
-	opr(CLA | IAC);
-	dca(a);
-	*q = *a;
+	if (as) {
+		dca(a);
+		*q = *a;
+	} else
+		push(q);
 }
 
 /*
