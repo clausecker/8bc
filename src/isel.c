@@ -604,6 +604,7 @@ isel(int op, const struct expr *e)
 		return;
 
 	case RST:
+		acstate = zero;
 		ndefer = 0;
 		want.lac = 0;
 		want.known = LANY | ACKNOWN;
@@ -612,6 +613,7 @@ isel(int op, const struct expr *e)
 		return;
 
 	case RND:
+		acstate = random;
 		want.known = LANY;
 		undefer();
 		return;
