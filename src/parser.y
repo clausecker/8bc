@@ -369,6 +369,7 @@ expr		: NAME {
 			dca(&factor);
 			lda(&$1);
 			pop(&$1);
+			acrandom();
 			instr("MUL");
 			push(&$$);
 		}
@@ -377,6 +378,7 @@ expr		: NAME {
 			pop(&$3);
 			dca(&factor);
 			lda(&$1);
+			acrandom();
 			instr("MUL");
 			dca(&$1);
 			$$ = $1;

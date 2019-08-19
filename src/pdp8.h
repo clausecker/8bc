@@ -208,9 +208,16 @@ extern struct expr acstate;
  *     Notify the optimiser that you expect the AC to be clear at this
  *     point in time.
  *
+ * acrandom()
+ *     Notify the optimiser that you are going to emit instructions that
+ *     modify L:AC in ways the optimiser does not know about.  This also
+ *     performs the effect of catchup() before deleting any knowledge
+ *     about the content of L:AC.
+ *
  * catchup()
  *     Tell the optimiser to emit instructions such that the actual
  *     state of the machine equals the simulated state of the machine.
  */
 extern void acclear(void);
+extern void acrandom(void);
 extern void catchup(void);

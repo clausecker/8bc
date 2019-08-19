@@ -146,9 +146,8 @@ dca(const struct expr *e)
 extern void
 jms(const struct expr *e)
 {
-	catchup();
+	acrandom();
 	emitisn(JMS, e);
-	isel(RND, NULL);
 }
 
 extern void
@@ -188,6 +187,13 @@ opr(int op)
 		writeback();
 
 	isel(op, NULL);
+}
+
+extern void
+acrandom(void)
+{
+	writeback();
+	isel(RND, NULL);
 }
 
 extern void
