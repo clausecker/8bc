@@ -364,7 +364,7 @@ normalsel(int op, const struct expr *e)
 		}
 
 		/* general case: nothing can be assumed */
-		want.known &= ~LKNOWN | ~ACKNOWN;
+		want.known &= ~LKNOWN & ~ACKNOWN;
 		must_emit |= 3;
 
 		break;
