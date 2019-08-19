@@ -347,7 +347,7 @@ expr		: NAME {
 		}
 		| '&' expr %prec INC {
 			$$ = l2rval(&$2);
-			if ($$.value = NOLVAL)
+			if ($$.value == NOLVAL)
 				error($2.name, "not an lvalue");
 		}
 		| '^' expr %prec INC {
