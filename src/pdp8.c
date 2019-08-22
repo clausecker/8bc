@@ -55,7 +55,7 @@ forcepush(struct expr *e)
 extern void
 push(struct expr *e)
 {
-	if (acstate.value != RANDOM && !onstack(acstate.value))
+	if (!inac(RANDOM) && !onstack(acstate.value))
 		*e = acstate;
 	else
 		forcepush(e);
@@ -65,7 +65,7 @@ extern void
 pop(struct expr *e)
 {
 	/* omit writeback on immediate pop */
-	if (acstate.value == e->value)
+	if (inac(e->value))
 		dirty = 0;
 
 	emitpop(e);
@@ -170,7 +170,7 @@ extern void
 lda(const struct expr *e)
 {
 	/* omit duplicate loads */
-	if (acstate.value == e->value)
+	if (inac(e->value))
 		return;
 
 	writeback();

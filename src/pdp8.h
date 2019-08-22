@@ -44,6 +44,7 @@ enum {
 /*
  * utility macros for dealing with storage classes.
  */
+#define inac(x) (acstate.value == (x))
 #define val(x) ((x) & ~CMASK)
 #define class(x) ((x) & CMASK)
 #define rclass(x) ((x) & CMASK & ~LMASK)

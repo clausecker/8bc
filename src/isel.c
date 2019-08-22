@@ -373,7 +373,7 @@ normalsel(int op, const struct expr *e)
 		skipstate = SKIPABLE;
 		must_emit |= 1;
 
-		if (acstate.value == e->value)
+		if (inac(e->value))
 			must_emit |= 2;
 
 		break;
