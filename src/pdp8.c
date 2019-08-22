@@ -170,12 +170,12 @@ extern void
 lda(const struct expr *e)
 {
 	/* omit duplicate loads */
-	if (inac(e->value))
-		return;
+	if (!inac(e->value)) {
+		writeback();
+		isel(CLA, NULL);
+		isel(TAD, e);
+	}
 
-	writeback();
-	isel(CLA, NULL);
-	isel(TAD, e);
 	isel(LIV, NULL);
 }
 
