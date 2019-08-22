@@ -556,7 +556,6 @@ normalsel(int op, const struct expr *e)
 		break;
 	}
 
-
 	default:
 		fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 	}
@@ -586,10 +585,88 @@ normalsel(int op, const struct expr *e)
 static void
 skipsel(int op, const struct expr *e)
 {
-	/* TODO: apply optimisations */
-	acstate = random;
+	int affects_lac = 0, ac_is_clear, o;
+
+	ac_is_clear = want.known & ACKNOWN && (want.lac & 07777) == 0;
 	skipstate = NORMAL;
-	want.known = 0;
+
+	switch(op & 07000) {
+	case TAD:
+	case AND:
+		affects_lac = 1;
+		break;
+
+	case ISZ:
+		skipstate = SKIPABLE;
+		break;
+
+	case DCA:
+		if (!ac_is_clear)
+			affects_lac = 1;
+
+		break;
+
+	case JMP:
+		break;
+
+	case OPR:
+		o = op;
+
+		for (;;) switch (peelopr(&o)) {
+		case NOP:
+			goto peeled;
+
+		case BSW:
+		case CLA:
+			if (!ac_is_clear)
+				affects_lac = 1;
+
+			break;
+
+		case CLL:
+			if (~want.known & LANY && (~want.known & LKNOWN || (want.lac & 010000) != 0))
+				affects_lac = 1;
+
+			break;
+
+		case CML:
+			if (~want.known & LANY)
+				affects_lac = 1;
+
+			break;
+
+		case RAR:
+		case RAL:
+		case RTR:
+		case RTL:
+		case IAC:
+		case CMA:
+			affects_lac = 1;
+			break;
+
+		case SMA:
+		case SZA:
+		case SNL:
+		case SKP:
+			affects_lac = 1;
+			skipstate = SKIPABLE;
+			break;
+
+		default:
+			fatal(NULL, "unregonised OPR instruction: %04o", o & 07777);
+		}
+
+	peeled:	break;
+
+	default:
+		fatal(NULL, "invalid arg to %s: %06o", __func__, op);
+	}
+
+	if (affects_lac) {
+		acstate = random;
+		want.known = 0;
+	}
+
 	undefer();
 	emitisn(op, e);
 }
