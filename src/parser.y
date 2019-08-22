@@ -364,11 +364,19 @@ expr		: NAME {
 			push(&$$);
 		}
 		| expr '*' expr {
-			lda(&$3);
-			pop(&$3);
-			dca(&factor);
-			lda(&$1);
-			pop(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				dca(&factor);
+				lda(&$1);
+				pop(&$1);
+			} else {
+				lda(&$1);
+				pop(&$1);
+				dca(&factor);
+				lda(&$3);
+				pop(&$3);
+			}
 			acrandom();
 			instr("MUL");
 			push(&$$);
@@ -388,32 +396,63 @@ expr		: NAME {
 		| expr '/' expr /* TODO */
 		| expr ASDIV expr /* TODO */
 		| expr '+' expr {
-			lda(&$3);
-			pop(&$3);
-			tad(&$1);
-			pop(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				tad(&$1);
+				pop(&$1);
+			} else {
+				lda(&$1);
+				pop(&$1);
+				tad(&$3);
+				pop(&$3);
+			}
+
 			push(&$$);
 		}
 		| expr ASADD expr {
-			lda(&$3);
-			pop(&$3);
-			tad(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				tad(&$1);
+			} else {
+				lda(&$1);
+				tad(&$3);
+				pop(&$3);
+			}
 			dca(&$1);
 			$$ = $1;
 		}
 		| expr '-' expr {
-			lda(&$3);
-			pop(&$3);
-			opr(CIA);
-			tad(&$1);
-			pop(&$1);
+			if (inac($1.value) && isconst($3.value)) {
+				$3.value = -val($3.value) & 07777;
+				lda(&$1);
+				pop(&$1);
+				tad(&$3);
+				pop(&$3);
+			} else {
+				lda(&$3);
+				pop(&$3);
+				opr(CIA);
+				tad(&$1);
+				pop(&$1);
+			}
+
 			push(&$$);
 		}
 		| expr ASSUB expr {
-			lda(&$3);
-			pop(&$3);
-			opr(CIA);
-			tad(&$1);
+			if (inac($1.value) && isconst($3.value)) {
+				$3.value = -val($3.value) & 07777;
+				lda(&$1);
+				tad(&$3);
+				pop(&$3);
+			} else {
+				lda(&$3);
+				pop(&$3);
+				opr(CIA);
+				tad(&$1);
+			}
+
 			dca(&$1);
 			$$ = $1;
 		}
@@ -434,16 +473,31 @@ expr		: NAME {
 		| expr NE expr { docmp(&$$, &$1, &$3, SZA, 0); }
 		| expr ASNE expr { docmp(&$$, &$1, &$3, SZA, 1); }
 		| expr '&' expr {
-			lda(&$3);
-			pop(&$3);
-			and(&$1);
-			pop(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				and(&$1);
+				pop(&$1);
+			} else {
+				lda(&$1);
+				pop(&$1);
+				and(&$3);
+				pop(&$3);
+			}
+
 			push(&$$);
 		}
 		| expr ASAND expr {
-			lda(&$3);
-			pop(&$3);
-			and(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				and(&$1);
+			} else  {
+				lda(&$1);
+				and(&$3);
+				pop(&$3);
+			}
+
 			dca(&$1);
 			$$ = $1;
 		}
