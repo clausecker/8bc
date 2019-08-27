@@ -39,15 +39,12 @@ getword()
 	/* if EOF hit, no word was scanned */
 	return (0);
 
-done:	*p++ = c;
-	while ((c = getchar()) != '*e') {
-		if (c == ' ' | c == '*n')
-			goto end;
-
+done:	while (c != '*e' & c != '*n' & c != ' ') {
 		*p++ = c;
+		c = getchar();
 	}
 
-end:	*p++ = '*e';
+	p[-1] = '*e';
 	endbuf = p;
 	return (word);
 }
