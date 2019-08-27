@@ -223,10 +223,17 @@ if_control	: '(' expr ')' {
 		;
 
 label		: NAME {
-			newlabel(&$1);
-			declare(&$1);
+			struct expr *e;
+
+			e = lookup($1.name);
+			if (e == NULL) {
+				newlabel(&$1);
+				declare(&$1);
+				e = &$1;
+			}
+
 			ldconst(0);
-			putlabel(&$1);
+			putlabel(e);
 		}
 		| CASE CONSTANT { error("CASE", "not implemented"); }
 		| DEFAULT { error("DEFAULT", "not implemented"); }
