@@ -51,8 +51,9 @@ enum {
 	NORMAL, /* not following a skip instruction */
 	DOSKIP, /* following a skip instruction found to perform a skip */
 	SKIPABLE, /* following a skip instruction that may skip */
-	NOSKIP, /* following a skip instruction found not to perform a skip (unused?) */
+	SKIPFWD, /* forward condition to subsequent skip instruction */
 };
+
 static unsigned char skipstate = NORMAL;
 
 /* acstate templates */
@@ -492,10 +493,8 @@ normalsel(int op, const struct expr *e)
 
 			if (~will.known & ACKNOWN) {
 				skipstate = SKIPABLE;
-				must_emit = 1;
 			} else if (will.lac & 004000) {
 				skipstate = DOSKIP;
-				must_emit = 0;
 			}
 
 			break;
@@ -506,10 +505,8 @@ normalsel(int op, const struct expr *e)
 
 			if (~will.known & ACKNOWN) {
 				skipstate = SKIPABLE;
-				must_emit = 1;
 			} else if ((will.lac & 007777) == 0) {
 				skipstate = DOSKIP;
-				must_emit = 0;
 			}
 
 			break;
@@ -520,10 +517,8 @@ normalsel(int op, const struct expr *e)
 
 			if (~will.known & LKNOWN) {
 				skipstate = SKIPABLE;
-				must_emit = 1;
 			} else if (will.lac & 010000) {
 				skipstate = DOSKIP;
-				must_emit = 0;
 			}
 
 			break;
@@ -588,6 +583,19 @@ skipsel(int op, const struct expr *e)
 	int affects_lac = 0, ac_is_clear, o;
 
 	ac_is_clear = want.known & ACKNOWN && (want.lac & 07777) == 0;
+
+	/*
+	 * check if this is a skip + IAC sequence and forward the
+	 * the condition.
+	 */
+	if ((op & ~00200) == IAC && (ac_is_clear || op & 00200)) {
+		skipstate = SKIPFWD;
+		acstate = random;
+		want.known = 0;
+		defer(op, e);
+		return;
+	}
+
 	skipstate = NORMAL;
 
 	switch(op & 07000) {
@@ -708,10 +716,6 @@ isel(int op, const struct expr *e)
 
 	/* next, consider skip state */
 	switch (skipstate) {
-	case NORMAL:
-		normalsel(op, e);
-		break;
-
 	case DOSKIP:
 		/* discard skip and current instruction if possible */
 		if (ndefer != 0) {
@@ -727,6 +731,52 @@ isel(int op, const struct expr *e)
 
 	case SKIPABLE:
 		skipsel(op, e);
+		break;
+
+	case SKIPFWD:
+		/* discard SZA/SNA if possible */
+		if (ndefer < 2) {
+			skipstate = NORMAL;
+			goto normal;
+		}
+
+
+		switch (op) {
+		case SZA | CLA:
+			if (ndefer < 1)
+				goto normal;
+
+			break;
+
+		case SNA | CLA:
+			/* can only toggle if a skip instruction was deferred */
+			if (ndefer < 2 || (deferred[ndefer - 2].op & OPR2) != OPR2)
+				goto normal;
+
+			/* toggle skip condition */
+			deferred[ndefer - 2].op ^= 00010;
+			break;
+
+		default:
+			goto normal;
+		}
+
+		/* record effect of CLA */
+		acstate = zero;
+		want.known |= ACKNOWN;
+		want.lac &= ~07777;
+
+		/* discard (CLA) IAC and current skip */
+		ndefer--;
+		break;
+
+		/* can't forward conditional */
+	normal:
+		skipstate = NORMAL;
+		/* FALLTHROUGH */
+
+	case NORMAL:
+		normalsel(op, e);
 		break;
 	}
 }
