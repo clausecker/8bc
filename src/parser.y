@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <string.h>
 
 #include "param.h"
 #include "pdp8.h"
@@ -176,6 +177,7 @@ statement	: AUTO auto_list ';' statement
 			putlabel(&$2);
 		}
 		| IF if_control statement ELSE {
+			memset($$.name, 0, MAXNAME);
 			newlabel(&$$);
 			ldconst(0);
 			jmp(&$$);
@@ -185,6 +187,7 @@ statement	: AUTO auto_list ';' statement
 			putlabel(&$5);
 		}
 		| WHILE {
+			memset($$.name, 0, MAXNAME);
 			newlabel(&$$);
 			ldconst(0);
 			putlabel(&$$);
@@ -214,6 +217,7 @@ statement	: AUTO auto_list ';' statement
 		;
 
 if_control	: '(' expr ')' {
+			memset($$.name, 0, MAXNAME);
 			newlabel(&$$);
 			lda(&$2);
 			pop(&$2);
