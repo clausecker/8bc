@@ -29,11 +29,11 @@
  * retlabel
  *     points to the current function's leave instruction
  */
-static struct expr framelabel = { 0, "(frame)" };
-static struct expr paramlabel = { 0, "(param)" };
-static struct expr stacklabel = { 0, "(stack)" };
-static struct expr autolabel = { 0, "(auto)" };
-static struct expr retlabel = { 0, "(return)" };
+static struct expr framelabel = { 0, "(FRAME)" };
+static struct expr paramlabel = { 0, "(PARAM)" };
+static struct expr stacklabel = { 0, "(STACK)" };
+static struct expr autolabel = { 0, "(AUTO)" };
+static struct expr retlabel = { 0, "(RETURN)" };
 
 /*
  * Stack variables.
@@ -160,7 +160,7 @@ lstr(const struct expr *e)
 extern void
 emitl(const struct expr *e)
 {
-	struct expr spill = { 0, "(spill)" };
+	struct expr spill = { 0, "(SPILL)" };
 
 	switch (class(e->value)) {
 	/* spill needed to construct address */
