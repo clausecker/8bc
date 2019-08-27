@@ -64,6 +64,7 @@ enum {
 	NORVAL  = INVALID | 0000003, /* not an rvalue */
 	NOLVAL  = INVALID | 0000004, /* not an lvalue */
 	RANDOM  = INVALID | 0000005, /* unknown value */
+	NOBREAK	= INVALID | 0000006, /* no break label */
 };
 
 /*

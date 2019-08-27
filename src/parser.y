@@ -19,6 +19,11 @@
 static struct expr argstack[ARGSIZ];
 static char narg = 0;
 
+/*
+ * The label to jump to when a BREAK; is executed.
+ */
+static struct expr breaklabel = { NOBREAK, "(BREAK)" };
+
 static void argpush(struct expr *);
 static void docall(struct expr *, int);
 static void docmp(struct expr *, struct expr *, struct expr *, int, int);
@@ -26,7 +31,7 @@ static void door(struct expr *, struct expr *, struct expr *, int, int);
 static void doshift(struct expr *, struct expr *, struct expr *, int, int);
 
 /* arguments for *, /, and % */
-static struct expr factor = { RVALUE | 00010, "FACTOR" };
+static struct expr factor = { RVALUE | 00010, "(FACTOR)" };
 %}
 
 %token	CONSTANT
@@ -191,10 +196,14 @@ statement	: AUTO auto_list ';' statement
 			newlabel(&$$);
 			ldconst(0);
 			putlabel(&$$);
-		} if_control statement {
+		} if_control {
+			$$ = breaklabel;
+			breaklabel = $3;
+		} statement {
 			ldconst(0);
 			jmp(&$2);
 			putlabel(&$3);
+			breaklabel = $4;
 		}
 		| SWITCH '(' expr ')' statement	{ /* original: SWITCH expr statement */
 			pop(&$3);
@@ -211,7 +220,14 @@ statement	: AUTO auto_list ';' statement
 			ret();
 		}
 		| RETURN ';' { ret(); }
-		| BREAK ';' { error("BREAK", "not implemented"); }
+		| BREAK ';' {
+			if (breaklabel.value == NOBREAK)
+				error("BREAK", "no loop to break");
+			else {
+				ldconst(0);
+				jmp(&breaklabel);
+			}
+		}
 		| expr ';' { pop(&$1); }
 		| ';'
 		;
