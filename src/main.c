@@ -29,7 +29,6 @@ static const char stdlib[NSTDLIB][8] = {
 extern int
 main(void)
 {
-	struct expr *e;
 	size_t i;
 
 	asmfile = stdout;
@@ -38,18 +37,19 @@ main(void)
 	dumpdata();
 
 	/* tell the B runtime where MAIN is */
-	e = define("MAIN");
 	label("MAIN=");
-	emitl(e);
+	emitl(define("MAIN"));
 
 	/* translate library labels to L### labels */
 	for (i = 0; i < NSTDLIB; i++) {
-		e = define(stdlib[i]);
-		setlabel(e);
+		setlabel(define(stdlib[i]));
 		instr("%.6s", stdlib[i]);
 	}
 
+	/* place the END label */
+	putlabel(define("END"));
 	instr("$");
+	comment("END");
 	endline();
 
 	if (warncnt > 0)
