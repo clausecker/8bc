@@ -490,7 +490,7 @@ normalsel(int op, const struct expr *e)
 			if (skipstate == DOSKIP)
 				break;
 
-			if (~will.known == ACKNOWN) {
+			if (~will.known & ACKNOWN) {
 				skipstate = SKIPABLE;
 				must_emit = 1;
 			} else if (will.lac & 004000) {
