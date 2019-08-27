@@ -392,7 +392,7 @@ newframe(const struct expr *fun)
 	nparam = 0;
 	nauto = 0;
 	nframe = 0;
-	endscope(0);
+	cleardecl();
 
 	/* function prologue */
 	emitc(0);

@@ -170,7 +170,7 @@ param		: NAME {
 statement	: AUTO auto_list ';' statement
 		| EXTRN extrn_list ';' statement
 		| label ':' statement
-		| { $$.value = beginscope(); } '[' statement_list ']' { endscope($1.value); }
+		| '[' statement_list ']'
 		| IF if_control statement %prec ELSE {
 			ldconst(0);
 			putlabel(&$2);

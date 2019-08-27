@@ -62,20 +62,10 @@ declare(struct expr *e)
 	return (decls + ndecl++);
 }
 
-extern int
-beginscope(void)
-{
-	return (ndecl);
-}
-
 extern void
-endscope(int scope)
+cleardecl(void)
 {
-	if (scope < 0 || scope > ndecl)
-		fatal(NULL, "invalid scope");
-
-
-	ndecl = scope;
+	ndecl = 0;
 }
 
 extern void
