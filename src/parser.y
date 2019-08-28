@@ -324,10 +324,18 @@ expr		: NAME {
 			docall(&$$, $3.value);
 		}
 		| expr '[' expr ']' {
-			lda(&$3);
-			pop(&$3);
-			tad(&$1);
-			pop(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				tad(&$1);
+				pop(&$1);
+			} else {
+				lda(&$1);
+				pop(&$1);
+				tad(&$3);
+				pop(&$3);
+			}
+
 			push(&$$);
 			$$ = r2lval(&$$);
 		}
@@ -412,10 +420,17 @@ expr		: NAME {
 			push(&$$);
 		}
 		| expr ASMUL expr {
-			lda(&$3);
-			pop(&$3);
-			dca(&factor);
-			lda(&$1);
+			if (inac($3.value)) {
+				lda(&$3);
+				pop(&$3);
+				dca(&factor);
+				lda(&$1);
+			} else {
+				lda(&$1);
+				dca(&factor);
+				lda(&$3);
+				pop(&$3);
+			}
 			acrandom();
 			instr("MUL");
 			dca(&$1);
