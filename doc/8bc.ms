@@ -1,6 +1,6 @@
 .RP
 .TL
-8bc \- a B compiler for the PDP-8
+8bc \- a B Compiler for the PDP-8
 .AU
 Robert Clausecker \(lafuz@fuz.su\(ra
 .AI
@@ -66,4 +66,195 @@ Historical implementations
 Our implementation
 .NH 1
 The design of 8bc
-
+.NH 2
+Optimisations
+.LP
+8bc is an optimising compiler.  Even though the lack of an intermeidate
+code representation makes many optimisations hard to perform, peephole
+optimisations are still possible.  To implement these optimisations, the
+compiler uses three layers of abstraction in code generation:
+.PP
+In the
+.I parser
+layer, each production rule's action generates an instruction sequence
+that pops the operands to the implemented operator from a virtual stack,
+computes the result, and pushes that result onto the virtual stack.  For
+example, a parser action for the + operator could be:
+.DS L
+.RS
+\fIexpr\fR = \fIexpr\fR '+' \fIexpr\fR {
+.RS
+\fIlda\fR(&\fI$3\fR);
+.br
+\fIpop\fR(&\fI$3\fR);
+.br
+\fItad\fR(&\fI$1\fR);
+.br
+\fIpop\fR(&\fI$1\fR);
+.br
+\fIpush\fR(&\fI$$\fR);
+.RE
+}
+.RE
+.DE
+The function
+.I lda ()
+requests for its argument to be loaded into AC and
+.I tad ()
+requests for a TAD instruction to be generated, implementing the
+behaviour of the + operator.  The function
+.I push ()
+allocates a new memory cell on the virtual stack and writes AC to it,
+leaving its contents undefined.  After loading a datum from the stack,
+.I pop ()
+is used to mark the top of the virtual stack as unused.  Care must be
+taken to only pop the top element off the stack.  This is ensured by
+always popping operands from right to left.
+.PP
+Most parser actions are a bit more complicated than this example and
+provide multiple instruction sequences for different situations, e.g.
+special casing constant operands.
+.PP
+These functions
+.I lda (),
+.I and (),
+.I tad (),
+.I isz (),
+.I dca (),
+.I jms (),
+.I jmp (),
+and
+.I opr ()
+are implemented in the \fIstack management\fR module to request the
+generation of the equivalent instructions.\**
+.FS
+IOT instructions are never requested and not implemented.
+.FE
+The module watches the contents of AC and eliminates stack allocations
+that can be satisfied by a constant or existing memory location, turning
+the virtual stack into stack registers.  When a newly allocated stack
+register is immediately loaded back into AC and popped, the entire
+.I push ();
+.I lda ();
+.I pop ();
+sequence is discarded, generating no code at all.  Some strength
+reductions are performed as well.
+.PP
+Except for JMS instructions (which are directly emitted), each 
+instruction is then passed into the \fIinstruction selection\fR state
+machine.  The state machine simulates the effect of the requested
+instructions to the extent possible and defers all instructions whose
+effect is known at compile time until their effect can no longer be
+simulated.
+.PP
+The state machine keeps track of the contents of AC and L and
+continuously replaces the deferred instructions with the shortest
+sequence of instructions needed to achieve the same effect;
+sequences that compute constants are replaced by sequences of up to
+two OPR and TAD instructions, statically known skips are eliminated,
+and skips setting AC to 0 or 1 followed by SZA or SNA are merged into
+one.
+.PP
+Summarised, the following optimisations are performed:
+.NH 3
+Strategy Selection
+.LP
+An operation is translated into a sequence of instructions depending
+on which operands are constant, on the stack, or already in AC.  For
+example, a subtraction normally generates the sequence
+.DS L
+.RS
+\fIexpr\fR = \fIexpr\fR '\-' \fIexpr\fR {
+.RS
+\fIlda\fR(&\fI$3\fR);
+.br
+\fIpop\fR(&\fI$3\fR);
+.br
+\fIopr\fR(CMA | IAC);
+.br
+\fItad\fR(&\fI$1\fR);
+.br
+\fIpop\fR(&\fI$1\fR);
+.br
+\fIpush\fR(&\fI$$\fR);
+.RE
+}
+.RE
+.DE
+which adds the minuend to the two's complement of the subtrahend.  If
+the subtrahend is known to be a constant and the minuend is known to
+already be in AC, the sequence
+.DS L
+.RS
+\fIexpr\fR = \fIexpr\fR '\-' \fIexpr\fR {
+.RS
+\fIlda\fR(&\fI$1\fR);
+.br
+\fIpop\fR(&\fI$1\fR);
+.br
+$3.\fIvalue\fR = RCONST | -\fIval\fR($3.\fIvalue\fR) & 07777;
+.br
+\fItad\fR(&\fI$3\fR);
+.br
+\fIpush\fR(&\fI$$\fR);
+.RE
+}
+.RE
+.DE
+is emitted instead, adding the two's complement of the subtrahend to the
+minuend already in AC, saving the minuend from begin deposited on the
+stack and then reloaded.
+.NH 3
+Stack forwarding
+.LP
+When the content of AC is known to be a constant value or the result of
+loading another value, a call to
+.I push ()
+does not allocate a new stack register but instead returns whatever is
+currently in AC.  This eliminates useless stack registers and paves the
+way for constant folding.
+.NH 3
+Reload elimination
+.LP
+When the content of AC is pushed to the stack and then immediately
+loaded into AC and popped, the entire
+.I push ();
+.I lda ();
+.I pop ();
+sequence is discarded, leaving the contents of AC untouched.  This
+eliminates all unnecessary stack operations during expression evaluation
+that are not already caught by stack forwarding.
+.NH 3
+Double load elimination
+.LP
+When AC is known to contain the content of a memory location and a load
+from that same location is requested, the duplicate load is discarded.
+The same optimisation is performed for constants through the constant
+folding optimisation.
+.NH 3
+Strength Reduction
+.LP
+Instructions which have no effect or can be replaced with OPR
+instructions are discarded or replaced.  For example, a
+.I tad ()
+call that attempts to add 1 to AC is replaced with an IAC instruction.
+.NH 3
+Constant folding
+.LP
+Sequences of instructions resulting in a constant value in AC are
+deferred.  The entire sequence is then replaced by one or two
+instructions loading the desired value into AC.  If possible, OPR
+instructions are used to reduce the size of the register template.
+.NH 3
+Skip elimination
+.LP
+Skip instructions that can be predicted at compile time are discarded.
+If the instruction is known to skip, the skipped instruction is
+discarded as well.
+.NH 3
+Skip forwarding
+.LP
+A skip instruction that clears AC and is followed by IAC is
+recognised as setting AC to the result of the condition.  If such a
+sequence is followed by a SZA or SNA microcoded with CLA, the two
+skip instructions are merged into one and the IAC is discarded.
