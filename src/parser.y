@@ -130,12 +130,15 @@ define_name	: NAME {
 		 * In a simple definition, the token left from this one
 		 * is a define_name, in a vector definition its a ].
 		 * Use this to place a comment with the name of what we
-		 * just defined in a simple definition.
+		 * just defined in a simple definition.  Also make sure
+		 * to always place an initialiser in a simple
+		 * definition.
 		 */
 initializer	: /* empty */ {
-			emitc(0);
-			if ($0.value != TOKEN)
+			if ($0.value != TOKEN) {
+				emitc(0);
 				commentname($0.name);
+			}
 
 			$$.value = 0;
 		}
