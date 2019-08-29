@@ -63,13 +63,14 @@ Runtime environment and ABI
 .NH 2
 Historical implementations
 .NH 2
-Our implementation
+The 8bc runtime and ABI
 .NH 1
 The design of 8bc
 .NH 2
 Optimisations
 .LP
-8bc is an optimising compiler.  Even though the lack of an intermeidate
+.I 8bc
+is an optimising compiler.  Even though the lack of an intermediate
 code representation makes many optimisations hard to perform, peephole
 optimisations are still possible.  To implement these optimisations, the
 compiler uses three layers of abstraction in code generation:
@@ -258,3 +259,29 @@ A skip instruction that clears AC and is followed by IAC is
 recognised as setting AC to the result of the condition.  If such a
 sequence is followed by a SZA or SNA microcoded with CLA, the two
 skip instructions are merged into one and the IAC is discarded.
+.NH 2
+Restrictions
+.LP
+Recursion is not supported.  Due to time constraints, the
+.B switch
+statement was left out of the implementation.  Implementations for
+the / and % operators are missing in
+.I brt.pal ,
+but can easily be added.  Many common B extensions such as
+\fBdo\fR-\fBwhile\fR loops, the \fBcontinue\fR statement, or
+implementations of & and | with short-circuit behaviour for control
+expressions were omitted.
+.PP
+.I 8bc
+directly generates a complete PAL program by concatenating the B runtime
+.I brt.pal
+and the compiler output.  This runtime contains a rudimentary standard
+library comprising the functions
+.I exit (),
+.I getchar (),
+.I putchar (),
+and
+.I sense ().
+No further library functions are provided.  It is not possible to link
+two or more B source files into a single binary and there is no way to
+write parts of the program in another language.
