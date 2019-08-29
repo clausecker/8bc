@@ -64,6 +64,45 @@ Runtime environment and ABI
 Historical implementations
 .NH 2
 The 8bc runtime and ABI
+.LP
+The
+.I 8bc
+runtime makes some concessions to deal with the PDP-8's restricted
+addressing mode, lack of stack and archaic behaviour of the JSR
+instruction.  Instead of generating a stack frame, each B function
+has a dedicated \fIcall frame\fR
+that stores a template for the zero page, space for the function's
+arguments, the function's automatic variables, and the previous
+content of the zero page to be restored on return.  A function is
+called with a JSR instruction followed by pointers to the function's
+parameters.  The number of parameters must match the number of arguments
+in the function's definition, the function returns to the first
+instruction after the arguments.
+.PP
+The call frame looks as follows.  The numbers of registers to save,
+function arguments to copy, and registers to initialise are negated to
+simplify the ENTER and LEAVE runtime routines.
+.DS I
+negated number of registers to save
+space to save the registers
+negated number of arguments
+function arguments
+negated number of register templates
+register templates
+space for automatic variables
+.DE
+The first instruction of every B function calls ENTER, a runtime
+function responsible for setting up the environment such that the
+function can do its job.  To return, the B function calls LEAVE, a
+runtime function that restores the zero page to its previous state
+and then returns from the function that called it.
+.PP
+The ENTER routine first copies all zero page registers that are going
+to be used into the call frame.  Then, the parameters are grabbed from
+the call site and copied into the call frame.  The return address is
+adjusted to skip over them.  Lastly, the register template is copied to
+the zero page.  The LEAVE routine is simpler.  It copies the saved
+registers back into the zero page and returns to the caller.
 .NH 1
 The design of 8bc
 .NH 2
@@ -83,7 +122,7 @@ computes the result, and pushes that result onto the virtual stack.  For
 example, a parser action for the + operator could be:
 .DS L
 .RS
-\fIexpr\fR = \fIexpr\fR '+' \fIexpr\fR {
+\fIexpr\fR = \fIexpr\fR \(aq+\(aq \fIexpr\fR {
 .RS
 \fIlda\fR(&\fI$3\fR);
 .br
@@ -165,7 +204,7 @@ on which operands are constant, on the stack, or already in AC.  For
 example, a subtraction normally generates the sequence
 .DS L
 .RS
-\fIexpr\fR = \fIexpr\fR '\-' \fIexpr\fR {
+\fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
 .RS
 \fIlda\fR(&\fI$3\fR);
 .br
@@ -187,7 +226,7 @@ the subtrahend is known to be a constant and the minuend is known to
 already be in AC, the sequence
 .DS L
 .RS
-\fIexpr\fR = \fIexpr\fR '\-' \fIexpr\fR {
+\fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
 .RS
 \fIlda\fR(&\fI$1\fR);
 .br
