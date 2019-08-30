@@ -80,10 +80,10 @@ Zero page usage
 The zero page is special because it is the only page that can be
 addressed directly.  B programs use the zero page as follows:
 .DS I
-0000 \- 0007\h'2m'interrupt handler
-0010 \- 0017\h'2m'indexed registers
-0020 \- 0027\h'2m'runtime registers
-0030 \- 0177\h'2m'scratch registers
+0000 \- 0007	interrupt handler
+0010 \- 0017	indexed registers
+0020 \- 0027	runtime registers
+0030 \- 0177	scratch registers
 .DE
 As interrupts are unsupported by B, the interrupt handler is a single
 HLT instruction at address 0001.  Index register 0010 is used to store
@@ -96,14 +96,14 @@ need not.  The runtime registers are used to store pointers to
 important B runtime functions and as scratch space for those runtime
 registers.  The runtime registers are used as follows:
 .DS I
-0020\h'2m'pointer to the ENTER routine
-0021\h'2m'pointer to the LEAVE routine
-0022\h'2m'pointer to the MUL routine
-0023\h'2m'pointer to the DIV routine
-0024\h'2m'pointer to the MOD routine
-0025\h'2m'runtime scratch register
-0026\h'2m'runtime scratch register
-0027\h'2m'runtime scratch register
+0020		pointer to the ENTER routine
+0021		pointer to the LEAVE routine
+0022		pointer to the MUL routine
+0023		pointer to the DIV routine
+0024		pointer to the MOD routine
+0025		runtime scratch register
+0026		runtime scratch register
+0027		runtime scratch register
 .DE
 .NH 3
 Function call sequence
@@ -154,22 +154,14 @@ layer, each production rule's action generates an instruction sequence
 that pops the operands to the implemented operator from a virtual stack,
 computes the result, and pushes that result onto the virtual stack.  For
 example, a parser action for the + operator could be:
-.DS L
-.RS
+.DS I
 \fIexpr\fR = \fIexpr\fR \(aq+\(aq \fIexpr\fR {
-.RS
-\fIlda\/\fR(&\fI$3\/\fR);
-.br
-\fIpop\/\fR(&\fI$3\/\fR);
-.br
-\fItad\/\fR(&\fI$1\/\fR);
-.br
-\fIpop\/\fR(&\fI$1\/\fR);
-.br
-\fIpush\/\fR(&\fI$$\/\fR);
-.RE
+	\fIlda\/\fR(&\fI$3\/\fR);
+	\fIpop\/\fR(&\fI$3\/\fR);
+	\fItad\/\fR(&\fI$1\/\fR);
+	\fIpop\/\fR(&\fI$1\/\fR);
+	\fIpush\/\fR(&\fI$$\/\fR);
 }
-.RE
 .DE
 The function
 .I lda ()
@@ -236,44 +228,27 @@ Strategy Selection
 An operation is translated into a sequence of instructions depending
 on which operands are constant, on the stack, or already in AC.  For
 example, a subtraction normally generates the sequence
-.DS L
-.RS
+.DS I
 \fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
-.RS
-\fIlda\fR(&\fI$3\/\fR);
-.br
-\fIpop\fR(&\fI$3\/\fR);
-.br
-\fIopr\fR(CMA | IAC);
-.br
-\fItad\fR(&\fI$1\fR);
-.br
-\fIpop\fR(&\fI$1\/\fR);
-.br
-\fIpush\fR(&\fI$$\/\fR);
-.RE
+	\fIlda\/\fR(&\fI$3\/\fR);
+	\fIpop\/\fR(&\fI$3\/\fR);
+	\fIopr\/\fR(\f(CRCMA\fR | \f(CRIAC\fR);
+	\fItad\/\fR(&\fI$1\fR);
+	\fIpop\/\fR(&\fI$1\/\fR);
+	\fIpush\/\fR(&\fI$$\/\fR);
 }
-.RE
 .DE
 which adds the minuend to the two's complement of the subtrahend.  If
 the subtrahend is known to be a constant and the minuend is known to
 already be in AC, the sequence
-.DS L
-.RS
+.DS I
 \fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
-.RS
-\fIlda\/\fR(&\fI$1\/\fR);
-.br
-\fIpop\/\fR(&\fI$1\/\fR);
-.br
-$3.\fIvalue\fR = RCONST | -\fIval\/\fR($3.\fIvalue\/\fR) & 07777;
-.br
-\fItad\/\fR(&\fI$3\/\fR);
-.br
-\fIpush\/\fR(&\fI$$\/\fR);
-.RE
+	\fIlda\/\fR(&\fI$1\/\fR);
+	\fIpop\/\fR(&\fI$1\/\fR);
+	\fI$3.value\fR = \f(CRRCONST\fR | -\fIval\/\fR(\fI$3.value\/\fR) & 07777;
+	\fItad\/\fR(&\fI$3\/\fR);
+	\fIpush\/\fR(&\fI$$\/\fR);
 }
-.RE
 .DE
 is emitted instead, adding the two's complement of the subtrahend to the
 minuend already in AC, saving the minuend from begin deposited on the
