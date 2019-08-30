@@ -49,8 +49,8 @@ that started to become commonplace in the 1980s.
 The design of
 .I 8bc
 and the PDP-8 target architecture was chosen to highlight the
-characteristics of the PDP-8, what design concessions have to be made
-to bring B on it, and how computers evolved to satisfy the demands of
+characteristics of the PDP-8, what design concessions had to be made
+to bring B to it, and how computers evolved to satisfy the demands of
 procedural languages.
 .NH 1
 Background
@@ -68,11 +68,12 @@ The 8bc runtime and ABI
 The
 .I 8bc
 runtime makes some concessions to deal with the PDP-8's restricted
-addressing mode, lack of stack and archaic behaviour of the JSR
+addressing mode, lack of stack and archaic behaviour of the
+.CW JSR
 instruction.  Instead of generating a stack frame, each B function
 has a dedicated \fIcall frame\fR
 that stores a template for the zero page, space for the function's
-arguments, the function's automatic variables, and the previous
+parameters, the function's automatic variables, and the previous
 content of the zero page to be restored on return.
 .NH 3
 Zero page usage
@@ -87,20 +88,21 @@ addressed directly.  B programs use the zero page as follows:
 .DE
 As interrupts are unsupported by B, the interrupt handler is a single
 HLT instruction at address 0001.  Index register 0010 is used to store
-one of the factors when the MUL routine is called.  While the B compiler
-does not otherwise use the index registers, they are used by the B
-runtime routines.
+one of the factors when the
+.CW MUL
+routine is called.  While the B compiler does not otherwise use the
+index registers, they are used by the B runtime routines.
 .PP
 Scratch registers much be preserved by the callee, indexed registers
 need not.  The runtime registers are used to store pointers to
 important B runtime functions and as scratch space for those runtime
 registers.  The runtime registers are used as follows:
 .DS I
-0020		pointer to the ENTER routine
-0021		pointer to the LEAVE routine
-0022		pointer to the MUL routine
-0023		pointer to the DIV routine
-0024		pointer to the MOD routine
+0020		pointer to the \f(CRENTER\fR routine
+0021		pointer to the \f(CRLEAVE\fR routine
+0022		pointer to the \f(CRMUL\fR routine
+0023		pointer to the \f(CRDIV\fR routine
+0024		pointer to the \f(CRMOD\fR routine
 0025		runtime scratch register
 0026		runtime scratch register
 0027		runtime scratch register
@@ -108,37 +110,163 @@ registers.  The runtime registers are used as follows:
 .NH 3
 Function call sequence
 .LP
-A function is called with a JSR instruction followed by pointers to the
-function's parameters.  The number of parameters must match the number
-of arguments in the function's definition, the function returns to the
-first instruction after the arguments.
+A function is called with a
+.CW JSR
+instruction followed by pointers to the function's parameters.  The
+number of parameters must match the number of parameters in the
+function's definition, the function returns to the first instruction
+after the arguments.
 .PP
 The call frame looks as follows.  The numbers of registers to save,
 function arguments to copy, and registers to initialise are negated to
-simplify the ENTER and LEAVE runtime routines.
+simplify the
+.CW ENTER
+and
+.CW LEAVE
+runtime routines.
 .DS I
 negated number of registers to save
 space to save the registers
-negated number of arguments
-function arguments
+negated number of parameters
+function parameters
 negated number of register templates
 register templates
 space for automatic variables
 .DE
-The first instruction of every B function calls ENTER, a runtime
+The first instruction of every B function calls
+.CW ENTER ,
+a runtime
 function responsible for setting up the environment such that the
-function can do its job.  To return, the B function calls LEAVE, a
-runtime function that restores the zero page to its previous state
+function can do its job.  To return, the B function calls
+.CW LEAVE ,
+a runtime function that restores the zero page to its previous state
 and then returns from the function that called it.
 .PP
-The ENTER routine first copies all zero page registers that are going
-to be used into the call frame.  Then, the parameters are grabbed from
+The
+.CW ENTER
+routine first copies all zero page registers that are going
+to be used into the call frame.  Then, the arguments are grabbed from
 the call site and copied into the call frame.  The return address is
 adjusted to skip over them.  Lastly, the register template is copied to
-the zero page.  The LEAVE routine is simpler.  It copies the saved
+the zero page.  The
+.CW LEAVE
+routine is simpler: it copies the saved
 registers back into the zero page and returns to the caller.
 .NH 1
 The design of 8bc
+.LP
+The design of
+.I 8bc
+was driven by the desire to generate native code for the PDP-8 with
+acceptable performance while limiting the size, resource consumption,
+and programming techniques of the compiler to the state of the art in
+the early 1980's.  This way, we can not only give a good picture of
+how to cope with the quirks and constraints of the PDP-8 but also
+explore compiler design from a historical perspective.
+.NH 2
+Overview
+.LP
+Like modern and historical C compilers,
+.I 8bc
+is split into a compiler driver
+.I 8bc
+that passes the source file through compiler and assembler, interpretes
+options, prepends the B runtime
+.I brt.pal
+and deletes intermediate files, and an actual compiler
+.I 8bc1
+that translates B source into PAL assembly.  This compiler is a one pass
+compiler written in C using
+.B lex (1)
+and
+.B yacc (1)
+to generate lexer and parser.  Contrary to historical B and C compilers
+(but not compilers for other languages such as Pascal), no intermediate
+representation of the source code is used.  Instead, code is generated
+at each parser action.  This makes for a very memory and time efficient
+design, but greatly restricts the amounts of optimisations possible.
+.PP
+Apart from a few global variables, the majority of the state remembered
+by the compiler is found in a \fIdefinition table\fR for variables and
+functions defined at the top level and a \fIdeclaration table\fR for
+names declared within a function.  While the declaration table is vital
+for the compiler to find out about the storage class about local names,
+the definition table is only needed due to shortcomings of the PAL
+assembler: as it is limited to symbols of up to 7 alphanumeric
+characters, we cannot always use B names as symbol names.  Instead, the
+B compiler translates all names to numbered labels with the association
+between name and number being kept in the declaration and definition
+tables.
+.NH 2
+Storage classes
+.LP
+.I 8bc
+recognises 7 different \fIstorage classes\fR.  The storage class is used
+by the code generator to figure out how to refer to an object.  Each
+storage class exists as an
+.I lvalue
+and as an
+.I rvalue
+class.  The difference is that the rvalue storage class has an
+additional level of indirection.  For example, an object of storage class
+.CW RLABEL
+is the value of a label.  If we dereference an
+.CW RLABEL ,
+we get an object of storage class
+.CW LLABEL
+which is the object located at that label.  The lvalue storage classes are:
+.DS I
+0	\f(CRLCONST\fR	object at absolute address
+1	\f(CRLVALUE\fR	object pointed to by zero page register
+2	\f(CRLLABEL\fR	object pointed to by label
+3	\f(CRLDATA\fR	object in data area
+4	\f(CRLSTACK\fR	object pointed to by stack register
+5	\f(CRLAUTO\fR	object in automatic variable area
+6	\f(CRLPARAM\fR	object in parameter area
+.DE
+The storage class
+.CW RCONST
+is used for constants.  \fIStack register\fR
+refers to a register in the zero page used to spill temporary values.
+The first stack register follows the last register loaded from the zero
+page template.  Since the size of the zero page template is only known
+after the function has been compiled, the compiler refers to stack
+registers through an offset from a label referring to the first stack
+register, necessitating a separate storage class.
+.PP
+A B object is converted from lvalue to rvalue through the & (take
+address) operator and back through the * (dereference) operator.  When
+an object that is not of class
+.CW LVALUE ,
+.CW LSTACK ,
+.CW RVALUE ,
+or
+.CW RSTACK
+is used as an operand to a memory instruction (one of
+.CW AND ,
+.CW TAD ,
+.CW ISZ ,
+.CW DCA ,
+.CW JMS ,
+or
+.CW JMP ),
+the object is
+.I spilled
+by templating a zero page register with the object's rvalue and an object
+of type
+.CW LVALUE
+or
+.CW RVALUE
+to render the original object accessible.  Objects of the
+various storage classes are otherwise created as follows:
+.DS I
+\f(CRRCONST\fR	numerical or character constant
+\f(CRLLABEL\fR	external variable, function, or label
+\f(CRLDATA\fR	string constant
+\f(CRRSTACK\fR	value of an expression
+\f(CRLAUTO\fR	automatic variable
+\f(CRLPARAM\fR	function parameter
+.DE
 .NH 2
 Optimisations
 .LP
@@ -167,8 +295,10 @@ The function
 .I lda ()
 requests for its argument to be loaded into AC and
 .I tad ()
-requests for a TAD instruction to be generated, implementing the
-behaviour of the + operator.  The function
+requests for a
+.CW TAD
+instruction to be generated, implementing the behaviour of the + operator.
+The function
 .I push ()
 allocates a new memory cell on the virtual stack and writes AC to it,
 leaving its contents undefined.  After loading a datum from the stack,
@@ -194,7 +324,8 @@ and
 are implemented in the \fIstack management\fR module to request the
 generation of the equivalent instructions.\**
 .FS
-IOT instructions are never requested and not implemented.
+.CW IOT
+instructions are never requested and not implemented.
 .FE
 The module watches the contents of AC and eliminates stack allocations
 that can be satisfied by a constant or existing memory location, turning
@@ -206,7 +337,9 @@ register is immediately loaded back into AC and popped, the entire
 sequence is discarded, generating no code at all.  Some strength
 reductions are performed as well.
 .PP
-Except for JMS instructions (which are directly emitted), each 
+Except for
+.CW JMS
+instructions (which are directly emitted), each 
 instruction is then passed into the \fIinstruction selection\fR state
 machine.  The state machine simulates the effect of the requested
 instructions to the extent possible and defers all instructions whose
@@ -217,9 +350,16 @@ The state machine keeps track of the contents of AC and L and
 continuously replaces the deferred instructions with the shortest
 sequence of instructions needed to achieve the same effect;
 sequences that compute constants are replaced by sequences of up to
-two OPR and TAD instructions, statically known skips are eliminated,
-and skips setting AC to 0 or 1 followed by SZA or SNA are merged into
-one.
+two
+.CW OPR
+and
+.CW TAD
+instructions, statically known skips are eliminated, and skips setting
+AC to 0 or 1 followed by
+.CW SZA
+or
+.Cw SNA
+are merged into one.
 .PP
 Summarised, the following optimisations are performed:
 .NH 3
@@ -283,16 +423,20 @@ folding optimisation.
 .NH 3
 Strength Reduction
 .LP
-Instructions which have no effect or can be replaced with OPR
+Instructions which have no effect or can be replaced with
+.CW OPR
 instructions are discarded or replaced.  For example, a
 .I tad ()
-call that attempts to add 1 to AC is replaced with an IAC instruction.
+call that attempts to add 1 to AC is replaced with an
+.CW IAC
+instruction.
 .NH 3
 Constant folding
 .LP
 Sequences of instructions resulting in a constant value in AC are
 deferred.  The entire sequence is then replaced by one or two
-instructions loading the desired value into AC.  If possible, OPR
+instructions loading the desired value into AC.  If possible,
+.CW OPR
 instructions are used to reduce the size of the register template.
 .NH 3
 Skip elimination
@@ -303,10 +447,18 @@ discarded as well.
 .NH 3
 Skip forwarding
 .LP
-A skip instruction that clears AC and is followed by IAC is
-recognised as setting AC to the result of the condition.  If such a
-sequence is followed by a SZA or SNA microcoded with CLA, the two
-skip instructions are merged into one and the IAC is discarded.
+A skip instruction that clears AC and is followed by
+.CW IAC
+is recognised as setting AC to the result of the condition.  If such a
+sequence is followed by a
+.CW SZA
+or
+.CW SNA
+microcoded with
+.CW CLA ,
+the two skip instructions are merged into one and the
+.CW IAC
+is discarded.
 .NH 2
 Restrictions
 .LP
@@ -318,7 +470,9 @@ the / and % operators are missing in
 but can easily be added.  Many common B extensions such as
 \fBdo\/\fR-\fBwhile\fR loops, the \fBcontinue\fR statement, or
 implementations of & and | with short-circuit behaviour for control
-expressions were omitted.
+expressions were omitted.  Redefinitions and use of undefined functions
+or variables are not detected by the compiler but will lead to failure
+during assembly.
 .PP
 .I 8bc
 directly generates a complete PAL program by concatenating the B runtime
