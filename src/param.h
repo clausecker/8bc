@@ -10,12 +10,12 @@
  * all scratch registers must be preserved by the callee.
  *
  * the runtime registers are used as follows:
- * 0010 pointer to the ENTER routine
- * 0011 pointer to the LEAVE routine
- * 0012 pointer to the MUL   routine
- * 0013 pointer to the DIV   routine
- * 0014 pointer to the MOD   routine
- * 0015--0017 runtime registers
+ * 0020 pointer to the ENTER routine
+ * 0021 pointer to the LEAVE routine
+ * 0022 pointer to the MUL   routine
+ * 0023 pointer to the DIV   routine
+ * 0024 pointer to the MOD   routine
+ * 0025--0027 runtime registers
  */
 enum {
 	NZEROPAGE = 00200,			/* number of storage locations in the zero page */
