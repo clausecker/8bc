@@ -73,11 +73,45 @@ instruction.  Instead of generating a stack frame, each B function
 has a dedicated \fIcall frame\fR
 that stores a template for the zero page, space for the function's
 arguments, the function's automatic variables, and the previous
-content of the zero page to be restored on return.  A function is
-called with a JSR instruction followed by pointers to the function's
-parameters.  The number of parameters must match the number of arguments
-in the function's definition, the function returns to the first
-instruction after the arguments.
+content of the zero page to be restored on return.
+.NH 3
+Zero page usage
+.LP
+The zero page is special because it is the only page that can be
+addressed directly.  B programs use the zero page as follows:
+.DS I
+0000 \- 0007\h'2m'interrupt handler
+0010 \- 0017\h'2m'indexed registers
+0020 \- 0027\h'2m'runtime registers
+0030 \- 0177\h'2m'scratch registers
+.DE
+As interrupts are unsupported by B, the interrupt handler is a single
+HLT instruction at address 0001.  Index register 0010 is used to store
+one of the factors when the MUL routine is called.  While the B compiler
+does not otherwise use the index registers, they are used by the B
+runtime routines.
+.PP
+Scratch registers much be preserved by the callee, indexed registers
+need not.  The runtime registers are used to store pointers to
+important B runtime functions and as scratch space for those runtime
+registers.  The runtime registers are used as follows:
+.DS I
+0020\h'2m'pointer to the ENTER routine
+0021\h'2m'pointer to the LEAVE routine
+0022\h'2m'pointer to the MUL routine
+0023\h'2m'pointer to the DIV routine
+0024\h'2m'pointer to the MOD routine
+0025\h'2m'runtime scratch register
+0026\h'2m'runtime scratch register
+0027\h'2m'runtime scratch register
+.DE
+.NH 3
+Function call sequence
+.LP
+A function is called with a JSR instruction followed by pointers to the
+function's parameters.  The number of parameters must match the number
+of arguments in the function's definition, the function returns to the
+first instruction after the arguments.
 .PP
 The call frame looks as follows.  The numbers of registers to save,
 function arguments to copy, and registers to initialise are negated to
@@ -124,15 +158,15 @@ example, a parser action for the + operator could be:
 .RS
 \fIexpr\fR = \fIexpr\fR \(aq+\(aq \fIexpr\fR {
 .RS
-\fIlda\fR(&\fI$3\fR);
+\fIlda\/\fR(&\fI$3\/\fR);
 .br
-\fIpop\fR(&\fI$3\fR);
+\fIpop\/\fR(&\fI$3\/\fR);
 .br
-\fItad\fR(&\fI$1\fR);
+\fItad\/\fR(&\fI$1\/\fR);
 .br
-\fIpop\fR(&\fI$1\fR);
+\fIpop\/\fR(&\fI$1\/\fR);
 .br
-\fIpush\fR(&\fI$$\fR);
+\fIpush\/\fR(&\fI$$\/\fR);
 .RE
 }
 .RE
@@ -152,7 +186,7 @@ taken to only pop the top element off the stack.  This is ensured by
 always popping operands from right to left.
 .PP
 Most parser actions are a bit more complicated than this example and
-provide multiple instruction sequences for different situations, e.g.
+provide multiple instruction sequences for different situations, e.\^g.\&
 special casing constant operands.
 .PP
 These functions
@@ -206,17 +240,17 @@ example, a subtraction normally generates the sequence
 .RS
 \fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
 .RS
-\fIlda\fR(&\fI$3\fR);
+\fIlda\fR(&\fI$3\/\fR);
 .br
-\fIpop\fR(&\fI$3\fR);
+\fIpop\fR(&\fI$3\/\fR);
 .br
 \fIopr\fR(CMA | IAC);
 .br
 \fItad\fR(&\fI$1\fR);
 .br
-\fIpop\fR(&\fI$1\fR);
+\fIpop\fR(&\fI$1\/\fR);
 .br
-\fIpush\fR(&\fI$$\fR);
+\fIpush\fR(&\fI$$\/\fR);
 .RE
 }
 .RE
@@ -228,15 +262,15 @@ already be in AC, the sequence
 .RS
 \fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
 .RS
-\fIlda\fR(&\fI$1\fR);
+\fIlda\/\fR(&\fI$1\/\fR);
 .br
-\fIpop\fR(&\fI$1\fR);
+\fIpop\/\fR(&\fI$1\/\fR);
 .br
-$3.\fIvalue\fR = RCONST | -\fIval\fR($3.\fIvalue\fR) & 07777;
+$3.\fIvalue\fR = RCONST | -\fIval\/\fR($3.\fIvalue\/\fR) & 07777;
 .br
-\fItad\fR(&\fI$3\fR);
+\fItad\/\fR(&\fI$3\/\fR);
 .br
-\fIpush\fR(&\fI$$\fR);
+\fIpush\/\fR(&\fI$$\/\fR);
 .RE
 }
 .RE
@@ -307,7 +341,7 @@ statement was left out of the implementation.  Implementations for
 the / and % operators are missing in
 .I brt.pal ,
 but can easily be added.  Many common B extensions such as
-\fBdo\fR-\fBwhile\fR loops, the \fBcontinue\fR statement, or
+\fBdo\/\fR-\fBwhile\fR loops, the \fBcontinue\fR statement, or
 implementations of & and | with short-circuit behaviour for control
 expressions were omitted.
 .PP
