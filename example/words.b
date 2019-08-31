@@ -44,8 +44,8 @@ done:	while (c != '*e' & c != '*n' & c != ' ') {
 		c = getchar();
 	}
 
-	p[-1] = '*e';
-	endbuf = p;
+	*p = '*e';
+	endbuf = p + 1;
 	return (word);
 }
 
@@ -112,7 +112,7 @@ putstats()
 }
 
 nwords 0;	/* the number of words found so far */
-words[32];	/* words found */
-freqs[32];	/* word frequencies */
+words[64];	/* words found */
+freqs[64];	/* word frequencies */
 endbuf end;	/* first free character in wordbuf */
 
