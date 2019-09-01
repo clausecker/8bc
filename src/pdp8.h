@@ -99,13 +99,6 @@ enum {
 	JMP = 05000, /* jump */
 	IOT = 06000, /* IO transfer */
 	OPR = 07000, /* operate (microcoded instructions) */
-
-	/* pseudo instructions, internal use only */
-	LDA = 006000, /* load AC, set L to undefined value */
-	CUP = 010000, /* catch up */
-	RST = 011000, /* discard deferred state, clear AC */
-	RND = 012000, /* mark AC state as unknown */
-	LIV = 013000, /* set L to an indeterminate value */
 };
 
 /*

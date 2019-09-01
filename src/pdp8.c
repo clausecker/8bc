@@ -35,9 +35,7 @@ static void
 writeback(void)
 {
 	if (dirty) {
-		struct expr e = acstate;
-
-		isel(DCA, &e);
+		isel(DCA, &acstate);
 		dirty = 0;
 	}
 }
@@ -49,7 +47,7 @@ forcepush(struct expr *e)
 	emitpush(e);
 	acstate = *e;
 	dirty = 1;
-	isel(LIV, NULL);
+	lany();
 }
 
 extern void
@@ -176,7 +174,7 @@ lda(const struct expr *e)
 		isel(TAD, e);
 	}
 
-	isel(LIV, NULL);
+	lany();
 }
 
 extern void
@@ -193,19 +191,19 @@ extern void
 acrandom(void)
 {
 	writeback();
-	isel(RND, NULL);
+	iselacrnd();
 }
 
 extern void
 acclear(void)
 {
 	dirty = 0;
-	isel(RST, NULL);
+	iselrst();
 }
 
 extern void
 catchup(void)
 {
 	writeback();
-	isel(CUP, NULL);
+	undefer();
 }

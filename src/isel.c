@@ -92,10 +92,7 @@ peelopr(int *op)
 	return (NOP);
 }
 
-/*
- * Emit all deferred instructions and advance have to want.
- */
-static void
+extern void
 undefer(void)
 {
 	int i;
@@ -680,41 +677,35 @@ skipsel(int op, const struct expr *e)
 }
 
 extern void
+iselrst(void)
+{
+	acstate = zero;
+	ndefer = 0;
+	want.lac = 0;
+	want.known = LANY | ACKNOWN;
+	have = want;
+	skipstate = NORMAL;
+}
+
+extern void
+iselacrnd(void)
+{
+	acstate = random;
+	want.known = LANY;
+	undefer();
+}
+
+extern void
+lany(void)
+{
+	want.known |= LANY;
+	if (skipstate == NORMAL)
+		fold();
+}
+
+extern void
 isel(int op, const struct expr *e)
 {
-	/* first, catch special instructions */
-	switch (op) {
-	case CUP:
-		undefer();
-		return;
-
-	case RST:
-		acstate = zero;
-		ndefer = 0;
-		want.lac = 0;
-		want.known = LANY | ACKNOWN;
-		have = want;
-		skipstate = NORMAL;
-		return;
-
-	case RND:
-		acstate = random;
-		want.known = LANY;
-		undefer();
-		return;
-
-	case LIV:
-		want.known |= LANY;
-		if (skipstate == NORMAL)
-			fold();
-		return;
-
-	default:
-		/* not a pseudo instruction */
-		;
-	}
-
-	/* next, consider skip state */
 	switch (skipstate) {
 	case DOSKIP:
 		/* discard skip and current instruction if possible */
