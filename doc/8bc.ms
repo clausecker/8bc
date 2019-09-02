@@ -1,3 +1,5 @@
+.\" read this in a terminal: nroff -t -ms 8bc.ms | less -R -z66
+.\" generate a PDF: groff -Tpdf -t -ms 8bc.ms >8bc.pdf
 .RP
 .TL
 8bc \- a B Compiler for the PDP-8
@@ -87,7 +89,8 @@ addressed directly.  B programs use the zero page as follows:
 0030\-0177	scratch registers
 .DE
 As interrupts are unsupported by B, the interrupt handler is a single
-HLT instruction at address 0001.  Index register 0010 is used to store
+.CW HLT
+instruction at address 0001.  Index register 0010 is used to store
 one of the factors when the
 .CW MUL
 routine is called.  While the B compiler does not otherwise use the
