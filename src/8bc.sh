@@ -8,19 +8,22 @@ bc1="$bcdir/8bc1"
 brt="$bcdir/brt.pal"
 
 usage() {
-	echo Usage: "$progname" [-S] [-o file.bin] file.b	>&2
-	echo " -S  do not assemble"				>&2
+	echo Usage: "$progname" [-kS] [-o file.bin] file.b	>&2
+	echo " -k  keep temporary files"			>&2
 	echo " -o  set output file name"			>&2
+	echo " -S  do not assemble"				>&2
 	exit 2
 }
 
-Sflag=
+kflag=
 ofile=
-while getopts So: opt
+Sflag=
+while getopts ko:S opt
 do
 	case $opt in
-	S) Sflag=1;;
+	k) kflag=1;;
 	o) ofile="$OPTARG";;
+	S) Sflag=1;;
 	?) usage;;
 	esac
 done
@@ -56,11 +59,11 @@ fi
 
 pal "$stem.pal"
 status=$?
-rm -f "$stem.pal" "$stem.lst"
+[ -z "$kflag" ] && rm -f "$stem.pal" "$stem.lst"
 
 if [ $status -ne 0 ]
 then
-	rm -f "$stem.bin"
+	rm -f "$stem.pal" "$stem.lst" "$stem.bin"
 else
 	[ ! -z "$ofile" ] && mv "$stem.bin" "$ofile"
 fi
