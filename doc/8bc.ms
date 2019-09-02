@@ -81,10 +81,10 @@ Zero page usage
 The zero page is special because it is the only page that can be
 addressed directly.  B programs use the zero page as follows:
 .DS I
-0000 \- 0007	interrupt handler
-0010 \- 0017	indexed registers
-0020 \- 0027	runtime registers
-0030 \- 0177	scratch registers
+0000\-0007	interrupt handler
+0010\-0017	indexed registers
+0020\-0027	runtime registers
+0030\-0177	scratch registers
 .DE
 As interrupts are unsupported by B, the interrupt handler is a single
 HLT instruction at address 0001.  Index register 0010 is used to store
@@ -197,6 +197,64 @@ characters, we cannot always use B names as symbol names.  Instead, the
 B compiler translates all names to numbered labels with the association
 between name and number being kept in the declaration and definition
 tables.
+.NH 2
+Character set
+.LP
+.I 8bc
+compiles B source files written in ASCII.  To allow for source files to
+be composed on a real PDP-8 using an ASR 33 teletype, a 6 bit ASCII
+representation is used internally, mapping ASCII codes 0140\-0176 to
+0100\-0140, yielding the character set:
+.DS I
+.TS
+cw20 cw20 .
+\fBnormal	alternative\fR
+_
+\f(CR\0 ! " # $ % & \(aq
+( ) * + , - . /
+0 1 2 3 4 5 6 7
+8 9 : ; < = > ?
+@ A B C D E F G	\` a b c d e f g
+H I J K L M N O	h i j k l m n o
+P Q R S T U V W	p q r s t u v w
+X Y Z [ \\ ] \(ha _	x y z { | } \(ti \0
+_
+.TE
+.DE
+The alternative characters are treated equally to the normal characters
+except inside character or string literals.  Names and keywords are case
+insensitive.  There is no alternative character for the
+.CW _
+character.  For example, the program
+.DS I
+\f(CRmain() {
+	extrn putchar;
+	auto i 0, hello "Hello, World!*n";
+
+	while (hello[i] != \(aq*e\(aq)
+		putchar(hello[i++]);
+}
+.DE
+could equally be written as
+.DS I
+\f(CRMAIN() [
+	EXTRN PUTCHAR;
+	AUTO I 0, HELLO "Hello, World!*N";
+
+	WHILE (HELLO[I] != \(aq*E\(aq)
+		PUTCHAR(HELLO[I++]);
+]
+.DE
+While case is honoured inside string and character literals, the ASR 33
+teletype is unable to read or print ASCII characters from the
+.I alternative
+characters list and prints the corrsponding
+.I normal
+characters instead.  To provide UNIX-like semantics, the
+.I getchar ()
+function translates CR to LF and clears the parity bit; the function
+.I putchar ()
+inserts a CR before each LF.
 .NH 2
 Storage classes
 .LP
