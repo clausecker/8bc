@@ -259,7 +259,7 @@ inserts a CR before each LF.
 Storage classes
 .LP
 .I 8bc
-recognises 7 different \fIstorage classes\fR.  The storage class is used
+recognises 7 \fIstorage classes\fR.  The storage class is used
 by the code generator to figure out how to refer to an object.  Each
 storage class exists as an
 .I lvalue
@@ -310,13 +310,14 @@ or
 .CW JMP ),
 the object is
 .I spilled
-by templating a zero page register with the object's rvalue and an object
-of type
+by templating a zero page register with the object's rvalue and
+substituting an object of type
 .CW LVALUE
 or
 .CW RVALUE
-to render the original object accessible.  Objects of the
-various storage classes are otherwise created as follows:
+referring to said zero page register to render the original object
+accessible.  Objects of the various storage classes are otherwise
+created as follows:
 .DS I
 \f(CRRCONST\fR	numerical or character constant
 \f(CRLLABEL\fR	external variable, function, or label
