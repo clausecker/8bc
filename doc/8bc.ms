@@ -4,7 +4,7 @@
 .TL
 8bc \- a B Compiler for the PDP-8
 .AU
-Robert Clausecker \(lafuz@fuz.su\(ra
+Robert Clausecker \(la\|fuz@fuz.su\/\(ra
 .AI
 Zuse Institute Berlin
 .AB
@@ -584,7 +584,7 @@ already be in AC, the sequence
 \fIexpr\fR = \fIexpr\fR \(aq-\(aq \fIexpr\fR {
 	\fIlda\/\fR(&\fI$1\/\fR);
 	\fIpop\/\fR(&\fI$1\/\fR);
-	\fI$3.value\fR = \f(CRRCONST\fR | -\fIval\/\fR(\fI$3.value\/\fR) & 07777;
+	\fI$3.value\fR = \f(CRRCONST\fR | \-\fIval\/\fR(\fI$3.value\/\fR) & 07777;
 	\fItad\/\fR(&\fI$3\/\fR);
 	\fIpush\/\fR(&\fI$$\/\fR);
 }
