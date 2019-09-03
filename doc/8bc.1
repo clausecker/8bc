@@ -1,0 +1,46 @@
+.TH 8BC 1 "2019-09-03" "Robert Clausecker" "General Commands"
+.
+.SH NAME
+\fB8bc\fR \(en B compiler for the PDP-8
+.
+.SH SYNOPSIS
+\fB8bc\fR
+[-\fBkS\fR]
+[-\fBo \fIfile.bin\fR]
+\fIfile.b\fR
+.
+.SH DESCRIPTION
+\fB8bc\fR is a B compiler for the PDP-8.  It compiles standard B for
+PDP-8/E or later computers with or without an EAE.  Programs are
+compiled to BIN formatted tapes with an entry point at 0200.
+.
+.SH OPTIONS
+.IP \fB-k\fR
+keep temporary pal and lst files
+.IP "\fB-o \fIfile.bin\fR"
+set output file name to \fIfile.bin\fR
+.IP \fB-S\fR
+do not assemble pal file
+.
+.SH FILES
+.IP "\fB*.b\fR"
+B source
+.IP "\fB*.pal\fR"
+PAL assembly source
+.IP "\fB*.lst\fR"
+PAL assembly listing
+.IP "\fB*.bin\fR"
+BIN format tape image
+.IP "\fBbrt.pal\fR"
+B runtime; preprended to each compiled program
+.IP "\fB8bc1\fR"
+the B compiler driven by \fI8bc\fR.  Reads B source from standard
+input, produces PAL on standard output.
+.
+.SH SEE ALSO
+.BR pal (1),
+.BR pdp8 (1),
+.BR cc (1)
+.LP
+R. Clausecker, \(lq8bc \(en a B compiler for the PDP-8\(rq, shipped with
+the documentation of the \fI8bc\fR package.
