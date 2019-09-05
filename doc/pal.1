@@ -1,0 +1,67 @@
+.TH PAL 1 "2019-09-05" "8bc distribution" "General Commands"
+.
+.SH NAME
+\fBpal\fR \(en a 2 pass PDP-8 pal-like assembler
+.
+.SH SYNOPSIS
+\fBpal\fR
+[-\fBdr\fR]
+\fIfile.pal\fR
+.
+.SH DESCRIPTION
+This assembler accepts a subset of the PAL 8 assembly language.
+It was written as a quick hack in order to download software into my
+bare-bones PDP-8 system, and no effort has been made to apply sound
+software engineering techniques in its design.  See the symbol table
+and code for the set of pseudo-ops supported.  See DEC's \(lq\fI\,Programming
+Languages (for the PDP/8)\/\fR\(rq for complete documentation of pseudo-ops,
+or see DEC's \(lq\fI\,Introduction to Programming (for the PDP/8)\/\fR\(rq or a
+lower level introduction to the assembly language.
+.
+.SH OPTIONS
+This program takes the following command line switches
+.IP \fB-d\fR
+dump the symbol table at end of assembly
+.IP "\fB-r\fR
+produce output in rim format (default is bin format)
+.
+.SH FILES
+This program uses the following file name extensions
+.IP "\fB*.pal\fR"
+source code (input)
+.IP "\fB*.lst\fR"
+assembly listing (output)
+.IP "\fB*.bin\fR"
+assembly output in DEC's bin format (output)
+.IP "\fB*.rim\fR"
+assembly output in DEC's rim format (output)
+.
+.SH SEE ALSO
+.BR 8bc (1),
+.BR as (1)
+.
+.SH AUTHORS
+Douglas Jones \(la\fI\,jones@cs.uiowa.edu\/\fR\(ra \(en built basic bits
+.br
+Rich Coon \(la\fI\,coon@convexw.convex.com\/\fR\(ra \(en added enough handle OS/278
+.br
+Bernhard Baehr \(la\fI\,b.baehr@madsack.de\/\fR\(ra \(en patch to correct checksum
+.
+.SH KNOWN BUGS
+Only a minimal effort has been made to keep the listing
+format anything like the PAL-8 listing format.  It screams too loud
+for off-page addresses (a quote mark would suffice), and it doesn't
+detect off-page addresses it can't fix (it should scream about them).
+.
+.SH WARRANTEE
+If you don't like it the way it works or if it doesn't work,
+that's tough.  You're welcome to fix it yourself.  That's what you
+get for using free software.
+.
+.SH COPYRIGHT NOTICE
+I wrote this and gave it away for free; if you want to
+make changes and give away the result for free, that's fine with me.
+If you can fix it enough that you can sell it, ok, but don't put any
+limits on the purchaser's right to do the same.  All the above aside,
+if you improve it or fix any bugs, it would be nice if you told me
+and offered me a copy of the new version.
