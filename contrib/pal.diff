@@ -1,0 +1,258 @@
+--- pal.c.orig	2019-09-05 19:53:17.181617000 +0200
++++ pal.c	2019-09-05 19:53:40.709052000 +0200
+@@ -50,6 +50,7 @@
+ 	and offered me a copy of the new version.
+ */
+ 
++#include <stdlib.h>
+ #include <stdio.h>
+ #include <ctype.h>
+ #define isend(c) ((c=='\0')||(c=='\n'))
+@@ -70,14 +71,8 @@
+ int cksum = 0;		/* checksum generated for .bin files */
+ int errors = 0;		/* number of errors found so far */
+ 
+-/* return c as upper-case if it is lower-case; else no change */
+-int c2upper(c)
+-int c;
+-{
+-	return ((c >= 'a' && c <= 'z') ? (c - ('a'-'A')) : c);
+-}
+-
+ /* command line argument processing */
++static void
+ getargs(argc, argv)
+ int argc;
+ char *argv[];
+@@ -258,6 +253,7 @@
+ #define firstsym 75
+ 
+ /* dump symbol table */
++static void
+ dump()
+ {
+ 	int i;
+@@ -269,6 +265,7 @@
+ }
+ 
+ /* define symbol */
++static void
+ define( sym, val )
+ char sym[SYMLEN];
+ short int val;
+@@ -293,7 +290,8 @@
+ 	symtab[i].val = val;
+ }
+ 
+-short int lookup( sym )
++static short int
++lookup( sym )
+ char sym[SYMLEN];
+ {
+ 	int i,j;
+@@ -321,7 +319,7 @@
+ int listed; /* has line been listed to listing yet (0 = no, 1 = yes) */
+ int lineno; /* line number of current line */
+ 
+-
++static void
+ listline()
+ /* generate a line of listing if not already done! */
+ {
+@@ -332,6 +330,7 @@
+ 	listed = 1;
+ }
+ 
++static void
+ error( msg )
+ char *msg;
+ /* generate a line of listing with embedded error messages */
+@@ -362,6 +361,7 @@
+ 	errors++;
+ }
+ 
++static void
+ readline()
+ /* read one input line, setting things up for lexical analysis */
+ {
+@@ -377,6 +377,7 @@
+ 	}
+ }
+ 
++static void
+ putleader()
+ /* generate 2 feet of leader on the object file, as per DEC documentation */
+ {
+@@ -388,6 +389,7 @@
+ 	}
+ }
+ 
++static void
+ puto(c)
+ int c;
+ /* put one character to obj file and include it in checksum */
+@@ -399,6 +401,7 @@
+ 
+ int field; /* the current field */
+ 
++static void
+ putorg( loc )
+ short int loc;
+ {
+@@ -406,6 +409,7 @@
+ 	puto( loc & 0077 );
+ }
+ 
++static void
+ putout( loc, val )
+ short int loc;
+ short int val;
+@@ -436,8 +440,7 @@
+ char lexstart; /* index of start of the current lexeme on line */
+ char lexterm;  /* index of character after the current lexeme on line */
+ 
+-#define isblank(c) ((c==' ')||(c=='\t')||(c=='\f')||(c=='>'))
+-
++static void
+ nextlex()
+ /* get the next lexeme into lex */
+ {
+@@ -469,6 +472,7 @@
+ 	lexterm = pos;
+ }
+ 
++static void
+ deflex( start, term, val )
+ int start; /* start of lexeme to be defined */
+ int term; /* character after end of lexeme to be defined */
+@@ -480,7 +484,7 @@
+ 	from = start;
+ 	to = 0;
+ 	while ((from < term) && (to < SYMLEN)) {
+-		sym[to++] = c2upper(line[from++]);
++		sym[to++] = toupper(line[from++]);
+ 	}
+ 	while (to < SYMLEN) {
+ 		sym[to++] = '\000';
+@@ -489,7 +493,7 @@
+ 	define( sym, val );
+ }
+ 
+-
++static void
+ condtrue()
+ /* called when a true conditional has been evaluated */
+ /* lex should be the opening <; skip it and setup for normal assembly */
+@@ -501,6 +505,7 @@
+ 	}
+ }
+ 
++static void
+ condfalse()
+ /* called when a false conditional has been evaluated */
+ /* lex should be the opening <; ignore all text until the closing > */
+@@ -539,6 +544,7 @@
+ int pz[0200]; /* storehouse for page zero constants */
+ int cp[0200]; /* storehouse for current page constants */
+ 
++static void
+ putpz()
+ /* put out page zero data */
+ {
+@@ -556,6 +562,7 @@
+ 	pzlc = 00177;
+ }
+ 
++static void
+ putcp()
+ /* put out current page data */
+ {
+@@ -576,9 +583,10 @@
+ 	cplc = 00177;
+ }
+ 
+-int getexprs(); /* forward declaration */
++static int getexprs(); /* forward declaration */
+ 
+-int evalsym()
++static int
++evalsym()
+ /* get the value of the current identifier lexeme; don't advance lexeme */
+ {
+ 	char sym[SYMLEN];
+@@ -589,7 +597,7 @@
+ 
+ 	/* copy the symbol */
+ 	while ((from < lexterm) && (to < SYMLEN)) {
+-		sym[to++] = c2upper(line[from++]);
++		sym[to++] = toupper(line[from++]);
+ 	}
+ 	while (to < SYMLEN) {
+ 		sym[to++] = '\000';
+@@ -599,6 +607,8 @@
+ }
+ 
+ int delimiter; /* the character immediately after this eval'd term */
++
++static void
+ nextlexblank()
+ /* used only within eval, getexpr, this prevents illegal blanks */
+ {
+@@ -609,7 +619,8 @@
+ 	delimiter = line[lexterm];
+ }
+ 
+-int eval()
++static int
++eval()
+ /* get the value of the current lexeme, set delimiter and advance */
+ {
+ 	int val;
+@@ -701,9 +712,11 @@
+ 
+ 	}
+ 	error("value");
++	return 0;
+ }
+ 
+-int getexpr()
++static int
++getexpr()
+ /* get an expression, from the current lexeme onward, leave the current
+    lexeme as the one after the expression!
+ 
+@@ -796,7 +809,8 @@
+ 	return 0;
+ }
+ 
+-int getexprs()
++static int
++getexprs()
+ /* or together a list of blank-separated expressions, from the current
+    lexeme onward, leave the current lexeme as the one after the last in
+    the list!
+@@ -853,6 +867,7 @@
+ 	}
+ }
+ 
++static void
+ onepass()
+ /* do one assembly pass */
+ {
+@@ -1165,6 +1180,7 @@
+ 
+ 
+ /* main program */
++extern int
+ main(argc, argv)
+ int argc;
+ char *argv[];
+@@ -1174,7 +1190,7 @@
+ 	onepass();
+ 
+ 	rewind(in);
+-	obj = fopen(objname, "w"); /* must be "wb" under DOS */
++	obj = fopen(objname, "wb");
+ 	objsave = obj;
+ 	lst = fopen(lstname, "w");
+ 	lstsave = NULL;
