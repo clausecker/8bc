@@ -4,7 +4,7 @@
 .TL
 8bc \- a B Compiler for the PDP-8
 .AU
-Robert Clausecker \(la\|fuz@fuz.su\/\(ra
+Robert Clausecker \(la\,fuz@fuz.su\/\(ra
 .AI
 Zuse Institute Berlin
 .AB
