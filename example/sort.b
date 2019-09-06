@@ -81,7 +81,7 @@ puts(str)
 	extrn putchar;
 
 	while (*str != '*e')
-		putchar(str++);
+		putchar(*str++);
 
 	putchar('*n');
 }
