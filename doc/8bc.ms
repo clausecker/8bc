@@ -127,6 +127,114 @@ encoded instruction is thus \f(CRDCA 1645\fR, which deposits the
 content of AC into the memory at address 1645 and then clears AC.
 .NH 3
 Microcoded instructions
+.LP
+The
+.I operate
+instruction
+.CW OPR
+interpretes its operand as a bitmask of operations to execute.  Three
+groups of operate instructions exist and within each group, an arbitrary
+set of instructions can be
+.I microcoded
+together to execute at once by computing the bitwise or of their
+operation codes.  The first group provides ways
+to set up the L and AC registers, increments, and rotations.
+.DS I
+7200	\f(CRCLA\fR	clear AC
+7100	\f(CRCLL\fR	clear L
+7040	\f(CRCMA\fR	complement AC
+7020	\f(CRCML\fR	complement L
+7010	\f(CRRAR\fR	rotate L:AC right
+7012	\f(CRRTR\fR	rotate L:AC twice right
+7004	\f(CRRAL\fR	rotate L:AC left
+7006	\f(CRRTL\fR	rotate L:AC twice left
+7002	\f(CRBSW\fR	byte swap AC
+7001	\f(CRIAC\fR	increment L:AC
+.DE
+When multiple group 1 instructions are microcoded together, first
+.CW CLA
+and
+.CW CLL
+are executed, then
+.CW CMA
+and
+.CW CML ,
+then
+.CW IAC ,
+and finally
+the rotate instructions
+.CW RAR ,
+.CW RTR ,
+.CW RAL ,
+.CW RTL ,
+and
+.CW BSW ,
+of which at most one can be microcoded into any given operate
+instruction.  Operate instructions from group 1 are commonly used to
+aid in implementing complex arithmetic operations.  For example, to
+compute \fIA\fR \(OR \fIB\fR, one needs to compute \fIA\fR + \fIB\fR
+\- (\,\fIA\fR \(AN \fIB\/\fR):
+.DS I
+\f(CRCLA      / clear AC
+TAD A    / compute 0 + A i.e. load A
+AND B    / compute A \(AN B
+CMA IAC  / compute \(no(A \(AN B) + 1, i.e. \-(A \(AN B)
+TAD A    / compute A - (A \(AN B)
+TAD B    / compute A + B - (A \(AN B), i.e. A \(OR B
+.DE
+Another common purpose is the generation of small immediate
+constants, removing the need to place a literal into the current or
+zero page.
+.PP
+Most of operate group 2 provides instructions for conditional execution
+depending on the content of L:AC.
+Instead of performing conditional jumps, the next instruction is skipped
+if the condition holds.  The following microcodable instructions are
+available:
+.DS I
+7600 \f(CRCLA\fR	clear AC
+7500 \f(CRSMA\fR	skip on minus AC
+7440 \f(CRSZA\fR	skip on zero AC
+7420 \f(CRSNL\fR	skip on non-zero L
+7410 \f(CRSKP\fR	reverse skip condition
+7404 \f(CROSR\fR	or switch registers
+7402 \f(CRHLT\fR	halt
+.DE
+Additionally, the mnemonics
+.DS I
+7510 \f(CRSPA\fR	skip on positive AC
+7450 \f(CRSNA\fR	skip on non-zero AC
+7430 \f(CRSZL\fR	skip on zero L
+.DE
+are provided for skip conditions micro-coded with
+.CW SKP .
+All of these instructions can be microcoded with each other.  First,
+.CW SMA ,
+.CW SZA ,
+and
+.CW SNL
+are executed and the next instruction skipped if any of the conditions
+holds.  If
+.CW SKP
+is microcoded in, the skip condition is flipped.  Then,
+.CW CLA
+is executed and finally
+.CW OSR
+(sensing the state of the front panel's switches) and
+.CW HLT .
+With these instructions, unsigned comparisons can be implemented easily.
+Due to the lack of an overflow flag it is however rather hard to program
+signed (two's complement) comparison and support for such has been
+omitted from
+.I 8bc
+in favour of unsigned comparisons.
+.PP
+A third group of operate instructions exists but remains unused by
+.I 8bc .
+This group of instructions manipulates the \fIextended arithmetic
+element\fR (EAE), an add-on for the PDP-8/E that provides extra
+arithmetic instructions.  We do not consider it any further in thid
+document.
 .NH 3
 Accessing peripherals
 .LP
