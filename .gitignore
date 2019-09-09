@@ -1,3 +1,9 @@
+8bc.1
+pal.1
+doc/8bc.pdf
+doc/8bc.txt
+pal
+pal.c
 *.o
 *.lst
 *.bin

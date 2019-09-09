@@ -4,9 +4,6 @@
 # B compiler driver
 
 progname="$0"
-bcdir="`dirname $0`"
-bc1="$bcdir/8bc1"
-brt="$bcdir/brt.pal"
 
 usage() {
 	echo Usage: "$progname" [-kS] [-o file.bin] file.b	>&2
@@ -40,9 +37,9 @@ then
 fi
 
 exec >"$stem.pal"
-cat "$brt"
+cat "%brtloc%"
 echo
-"$bc1" <"$1"
+"%bc1loc%" <"$1"
 status=$?
 exec >/dev/null
 
@@ -58,7 +55,7 @@ then
 	exit 0
 fi
 
-pal "$stem.pal"
+"%palloc%" "$stem.pal"
 status=$?
 [ -z "$kflag" ] && rm -f "$stem.pal" "$stem.lst"
 

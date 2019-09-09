@@ -1,17 +1,17 @@
 .\" (c) 2019 Robert Clausecker <fuz@fuz.su>
-.TH 8BC 1 "2019-09-03" "8bc distribution" "General Commands"
+.TH %bcupper% 1 "2019-09-03" "8bc distribution" "General Commands"
 .
 .SH NAME
-\fB8bc\fR \(en B compiler for the PDP-8
+\fB%bc%\fR \(en B compiler for the PDP-8
 .
 .SH SYNOPSIS
-\fB8bc\fR
+\fB%bc%\fR
 [-\fBkS\fR]
 [-\fBo \fIfile.bin\/\fR]
 \fIfile.b\fR
 .
 .SH DESCRIPTION
-\fB8bc\fR is a B compiler for the PDP-8.  It compiles standard B for
+\fB%bc%\fR is a B compiler for the PDP-8.  It compiles standard B for
 PDP-8/E or later computers with or without an EAE.  Programs are
 compiled to BIN formatted tapes with an entry point at 0200.
 .
@@ -32,14 +32,14 @@ PAL assembly source
 PAL assembly listing
 .IP "\fB*.bin\fR"
 BIN format tape image
-.IP "\fBbrt.pal\fR"
+.IP "\fB%brtloc%\fR"
 B runtime; preprended to each compiled program
-.IP "\fB8bc1\fR"
+.IP "\fB%bc1loc%\fR"
 the B compiler driven by \fI8bc\fR.  Reads B source from standard
 input, produces PAL on standard output.
 .
 .SH SEE ALSO
-.BR pal (1),
+.BR %pal% (1),
 .BR pdp8 (1),
 .BR cc (1)
 .LP
