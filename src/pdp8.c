@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* pdp8.c -- high level ASM interface */
 
 #include <stdio.h>

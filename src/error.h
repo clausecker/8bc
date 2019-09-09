@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* error.h -- error handling */
+
 /*
  * Error messages are printed with the error function.  If instead the
  * fatal function is called, the program is terminated immediately.

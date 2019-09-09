@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* param.h -- program parameters */
 
 /* zero page usage

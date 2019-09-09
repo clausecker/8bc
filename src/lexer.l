@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* lexer.l -- B language lexer */
+
 %{
 #include <ctype.h>
 #include <string.h>

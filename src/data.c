@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* data.c -- data area management */
 
 #include <stddef.h>

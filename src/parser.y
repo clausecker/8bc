@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* parser.y -- B language parser */
+
 %{
 #include <stdio.h>
 #include <string.h>

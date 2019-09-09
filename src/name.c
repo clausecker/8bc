@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* name.c -- name tables */
 
 #include <stdlib.h>

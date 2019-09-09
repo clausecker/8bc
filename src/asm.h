@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* asm.h -- PAL pretty printer */
+
 /*
  * This module deals with generating formatted assembly output.
  *

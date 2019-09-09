@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* data.h -- data area management */
+
 /*
  * The compiler stores string literals and numerical constants in a
  * constant data area.  This data area is manipulated with the

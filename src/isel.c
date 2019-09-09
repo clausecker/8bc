@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* isel.c -- instruction selection */
 
 #include <stdio.h>

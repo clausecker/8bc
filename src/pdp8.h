@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* pdp8.h -- high level ASM interface */
+
 /*
  * A struct expr stores the value of an expression.  A name can be
  * associated with the expression in which case it is stored in name.

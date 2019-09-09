@@ -1,4 +1,5 @@
-/* error.h -- error handling */
+/* (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* error.c -- error handling */
 
 #include <stdarg.h>
 #include <stdio.h>

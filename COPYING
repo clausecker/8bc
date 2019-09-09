@@ -1,0 +1,38 @@
+The compilation of software known as the 8bc distribution is distributed
+under the following terms:
+
+Copyright (c) 2019 Robert Clausecker <fuz@fuz.su>.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+The pal assembler is distributed under the following terms:
+
+   author:  Douglas Jones <jones@cs.uiowa.edu> -- built basic bits
+            Rich Coon <coon@convexw.convex.com> -- added enough handle OS/278
+            Bernhard Baehr <b.baehr@madsack.de> -- patch to correct checksum
+
+   copyright notice:  I wrote this and gave it away for free; if you want to
+	make changes and give away the result for free, that's fine with me.
+	If you can fix it enough that you can sell it, ok, but don't put any
+	limits on the purchaser's right to do the same.  All the above aside,
+	if you improve it or fix any bugs, it would be nice if you told me
+	and offered me a copy of the new version.

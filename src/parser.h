@@ -1,4 +1,5 @@
-/* definitions for lexer.l and parser.y */
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* parser.h -- definitions for lexer.l and parser.y */
 
 #define YYSTYPE struct expr
 extern YYSTYPE yylval;

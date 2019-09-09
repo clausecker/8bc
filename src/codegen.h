@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* codegen.h -- PDP-8 code generation */
+
 /*
  * Compute the effect of instruction op with operand e and remember it.
  * Update acstate to the new content of AC.  Possibly emit code.  The

@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# (c) 2019 Robert Clausecker <fuz@fuz.su>
 # B compiler driver
 
 progname="$0"

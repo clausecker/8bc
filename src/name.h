@@ -1,3 +1,6 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* name.h -- name tables */
+
 /*
  * There are two name tables in this compiler.  The defns table
  * stores (global) definitions, while the decls table store local

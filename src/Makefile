@@ -1,3 +1,5 @@
+# (c) 2019 Robert Clausecker <fuz@fuz.su>
+
 .POSIX:
 
 CC=cc -std=c99 -D_POSIX_C_SOURCE=200809L

@@ -1,4 +1,5 @@
-/* main.c -- program entry point */
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
+/* main.c -- 8bc1 entry point */
 
 #include <stdio.h>
 #include <stdlib.h>

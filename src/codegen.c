@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* codegen.c -- PDP-8 code generation */
 
 #include <stdio.h>

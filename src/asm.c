@@ -1,3 +1,4 @@
+/*- (c) 2019 Robert Clausecker <fuz@fuz.su> */
 /* asm.c -- PAL pretty printer */
 
 #include <stdarg.h>

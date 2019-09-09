@@ -1,3 +1,4 @@
+.\" (c) 2019 Robert Clausecker <fuz@fuz.su>
 .\" read this in a terminal: nroff -t -ms 8bc.ms | less -R -z66
 .\" generate a PDF: groff -Tpdf -t -ms 8bc.ms >8bc.pdf
 .RP
