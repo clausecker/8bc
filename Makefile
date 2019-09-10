@@ -30,10 +30,11 @@ EXAMPLEDIR=$(DATADIR)/example
 MANDIR=$(DATADIR)/man
 MAN1DIR=$(MANDIR)/man1
 
-# prefix for installation paths during install target
-# useful when you want to build packages
-PROTO=
-#PROTO=proto
+# prototype directory
+# The value of PROTO is prefixed to all paths during
+# installation.  Useful when you want to build packages
+P=
+#P=proto
 
 # name of the 8bc binary
 # if you are a maintainer and 8bc/8bc1/pal violate any of your
@@ -85,20 +86,20 @@ $(pal).1: doc/pal.1
 	sed -e 's,%bc%,$(bc),' -e 's,%pal%,$(pal),' \
 	    -e 's,%palupper%,$(palupper),' <doc/pal.1 >$(pal).1
 
-# copy files to installation directory
+# copy files to prototype directory
 install: all
-	mkdir -p "$(PROTO)/$(BINDIR)"
-	cp "src/$(bc)" "$(pal)" "$(PROTO)/$(BINDIR)/"
-	mkdir -p "$(PROTO)/$(LIBEXECDIR)"
-	cp "src/$(bc1)" "$(PROTO)/$(bc1loc)"
-	mkdir -p "$(PROTO)/$(DATADIR)/$(package)"
-	cp "src/brt.pal" "$(PROTO)/$(brtloc)"
-	mkdir -p "$(PROTO)/$(DOCDIR)/$(package)"
-	for doc in $(doc) ; do cp doc/$$doc "$(PROTO)/$(DOCDIR)/$(package)/" ; done
-	mkdir -p "$(PROTO)/$(EXAMPLEDIR)/$(package)"
-	for example in $(example) ; do cp example/$$example "$(PROTO)/$(EXAMPLEDIR)/$(package)/" ; done
-	mkdir -p "$(PROTO)/$(MAN1DIR)"
-	cp "$(bc).1" "$(pal).1" "$(PROTO)/$(MAN1DIR)/"
+	mkdir -p "$P$(BINDIR)"
+	cp "src/$(bc)" "$(pal)" "$P$(BINDIR)/"
+	mkdir -p "$P$(LIBEXECDIR)"
+	cp "src/$(bc1)" "$P$(bc1loc)"
+	mkdir -p "$P$(DATADIR)/$(package)"
+	cp "src/brt.pal" "$P$(brtloc)"
+	mkdir -p "$P$(DOCDIR)/$(package)"
+	for doc in $(doc) ; do cp doc/$$doc "$P$(DOCDIR)/$(package)/" ; done
+	mkdir -p "$P$(EXAMPLEDIR)/$(package)"
+	for example in $(example) ; do cp example/$$example "$P$(EXAMPLEDIR)/$(package)/" ; done
+	mkdir -p "$P$(MAN1DIR)"
+	cp "$(bc).1" "$(pal).1" "$P$(MAN1DIR)/"
 
 clean:
 	cd doc && $(MAKE) $(makeopt) clean
