@@ -46,7 +46,7 @@ do
 done
 
 shift $((OPTIND-1))
-if [ $# -eq 1 ]
+if [ $# -ne 1 ]
 then
 	usage
 fi
