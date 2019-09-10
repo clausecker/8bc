@@ -4,6 +4,26 @@
 PDP-8/E or later computers with or without an EAE.  Programs are
 compiled to BIN formatted tapes with an entry point at 0200.
 
+To run programs compiled with 8bc, use the PDP-8 emulator supplied
+by the SIMH project.  For example, to compile and run hello.b from
+the examples, first compile hello.b into hello.bin:
+
+    $ 8bc hello.b
+
+Then run SIMH: load hello.bin and jump to address 0200 to start the
+program.
+
+    $ pdp8
+
+    PDP-8 simulator V4.0-0 Current        git commit id: 6554e0a4
+    sim> l hello.bin
+    sim> g 200
+    HELLO, WORLD
+    HALT instruction, PC: 00321 (JMP 200)
+    sim> exit
+    Goodbye
+
+
 To build 8bc, first edit Makefile according to your system's needs.
 Typically, nothing needs to be adjusted.  You need the following
 prerequisites:
@@ -22,7 +42,17 @@ to compile 8bc and
     make install
 
 to install the distribution.  You may need to manually update the manual
-database afterwards.  If you are a maintainer, read Makefile carefully
-for instructions.
+database afterwards.
 
-Author: Robert Clausecker <fuz@fuz.su>
+If you are a maintainer, read Makefile carefully for instructions.
+Please mark SIMH as an optional dependency/recommended package if your
+distribution ships it.  If you perform nontrivial modifications to the
+codebase, please have the courtesy to change the version string in 8bc
+such that it is clearly visible that the code has been modified and by
+whom.
+
+Please report bugs on github or by mail to fuz@fuz.su.  Please do not
+send patches without prior communication.  While I'm willing to fix any
+bug you find, I prefer to write the patches myself.
+
+(c) 2019 Robert Clausecker <fuz@fuz.su>
