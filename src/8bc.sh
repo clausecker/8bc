@@ -3,7 +3,7 @@
 # (c) 2019 Robert Clausecker <fuz@fuz.su>
 # B compiler driver
 
-progname="$0"
+progname=`basename $0`
 
 usage() {
 	echo Usage: "$progname" [-kSV] [-o file.bin] file.b	>&2
@@ -64,7 +64,7 @@ fi
 stem="${1%.b}"
 if [ "$stem.b" != "$1" ]
 then
-	echo "$1": B source file required			>&2
+	echo "$progname": B source file required			>&2
 	usage
 fi
 
