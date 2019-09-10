@@ -56,6 +56,99 @@ procedural languages.
 .NH 1
 Background
 .NH 2
+The B language
+.LP
+The B programming language was designed by Ken Thompson and Dennis
+Ritchie of Bell Labs as a simplified variant of the BCPL language for
+use on the PDP-7.  The simplifications encompassed a removal of all
+language features programmers could make do without as well as a change
+from BCPL's wordy ALGOL-like syntax to a syntax built around an
+extensive use of punctuation, allowing the programmer to write terser
+programs and the parser to be less complex.
+.PP
+With these simplifications, a self-hosting B compiler was written for
+the PDP-7.  B code is compiled to a form of threaded code operating
+mainly on a stack of data, conveniently using the same instruction
+encoding as the PDP-7\~[4].  The stack comprises of lvalue/rvalue pairs
+where the lvalue contains the address of a datum.  If the object on the
+stack is not a true lvalue (e.\^g. because it is an intermediate
+value), the lvalue field points to the rvalue field containing the
+objects rvalue.
+.PP
+While slightly wasteful, the
+.I take-address
+operator
+.CW &
+and the
+.I dereference
+operator
+.CW *
+can be implemented easily in this scheme and lvalues do not need to be
+distinguished from rvalues for most parts.  In the B runtime for the
+PDP-11, this scheme was altered to push rvalue slots to the stack
+manually whenever needed.  While making the compiler more complicated,
+both memory usage and program performance is improved.
+.I 8bc
+uses a similar concept born out of the PDP-8's lack of useful addressing
+modes.
+.NH 3
+Syntax and features
+.LP
+Being the predecessor of C, the feature set of B is best described by
+explaining what features where added when B evolved into C.  A more
+detailed description can be found in\~[2].
+.IP \(bu 2
+B is a typeless language; all objects are machine words
+.IP \(bu 2
+structures, unions, enumerations, type definitions, and type qualifiers
+are absent
+.IP \(bu 2
+consequently, the declaration syntax is simple and does not mention any
+of these
+.IP \(bu 2
+all local variables are automatic; the
+.B static
+keyword does not exist
+.IP \(bu 2
+B does not have scopes
+.IP \(bu 2 all names external to a function must be
+explicitly declared as
+.B extrn
+(sic!) before use; as a popular extension, some compilers did so
+implicitly when an undeclared name was operand to the
+.CW ()
+operator
+.IP \(bu 2
+though popular extensions, the
+.B continue
+statement and \fBdo\fR-\fBwhile\fR loops are absent
+.IP \(bu 2
+the syntax for combined assignment operators is
+.CW = op,
+not
+.CW = "" op
+.IP \(bu 2
+the short-circuit logic operators
+.CW &&
+and
+.CW ||
+are absent; as a popular extension, many B compilers implemented
+.CW &
+and
+.CW |
+with their semantics when used in a control expression
+.IP \(bu 2
+the operators
+.CW ~
+and
+.CW ^
+where absent in early versions of B; the token
+.CW ,
+is a separator, not an operator
+.IP \(bu 2
+as with K&R C, the content of the standard library depends on the system
+with wildly varying contents
+.NH 2
 The PDP-8
 .LP
 The PDP-8 is a family of 12 bit minicomputers introduced by the Digital
@@ -175,11 +268,11 @@ compute \fIA\fR \(OR \fIB\fR, one needs to compute \fIA\fR + \fIB\fR
 \- (\,\fIA\fR \(AN \fIB\/\fR):
 .DS I
 \f(CRCLA      / clear AC
-TAD A    / compute 0 + A i.e. load A
+TAD A    / compute 0 + A i.\^e. load A
 AND B    / compute A \(AN B
-CMA IAC  / compute \(no(A \(AN B) + 1, i.e. \-(A \(AN B)
+CMA IAC  / compute \(no(A \(AN B) + 1, i.\^e. \-(A \(AN B)
 TAD A    / compute A - (A \(AN B)
-TAD B    / compute A + B - (A \(AN B), i.e. A \(OR B
+TAD B    / compute A + B - (A \(AN B), i.\^e. A \(OR B
 .DE
 Another common purpose is the generation of small immediate
 constants, removing the need to place a literal into the current or
@@ -302,14 +395,19 @@ is provided.  This yields a common idiom to send a character:
  JMP .-1  / if not, loop until it has been
 TLS       / send character in AC\fR
 .DE
-.NH 2
-The B language
 .NH 1
+The design of 8bc
+.LP
+The design of
+.I 8bc
+was driven by the desire to generate native code for the PDP-8 with
+acceptable performance while limiting the size, resource consumption,
+and programming techniques of the compiler to the state of the art in
+the early 1980's.  This way, we can not only give a good picture of
+how to cope with the quirks and constraints of the PDP-8 but also
+explore compiler design from a historical perspective.
+.NH 2
 Runtime environment and ABI
-.NH 2
-Historical implementations
-.NH 2
-The 8bc runtime and ABI
 .LP
 The
 .I 8bc
@@ -399,19 +497,8 @@ the zero page.  The
 .CW LEAVE
 routine is simpler: it copies the saved
 registers back into the zero page and returns to the caller.
-.NH 1
-The design of 8bc
-.LP
-The design of
-.I 8bc
-was driven by the desire to generate native code for the PDP-8 with
-acceptable performance while limiting the size, resource consumption,
-and programming techniques of the compiler to the state of the art in
-the early 1980's.  This way, we can not only give a good picture of
-how to cope with the quirks and constraints of the PDP-8 but also
-explore compiler design from a historical perspective.
 .NH 2
-Overview
+Program structure
 .LP
 Like modern and historical C compilers,
 .I 8bc
@@ -419,8 +506,8 @@ is split into a compiler driver
 .I 8bc
 that passes the source file through compiler and assembler, interpretes
 options, prepends the B runtime
-.I brt.pal
-and deletes intermediate files, and an actual compiler
+.I brt.pal ,
+and finally deletes intermediate files, and an actual compiler
 .I 8bc1
 that translates B source into PAL assembly.  This compiler is a one pass
 compiler written in C using
@@ -801,3 +888,5 @@ RITCHIE, Dennis M. \fIThe development of the C language.\fR ACM SIGPLAN Notices,
 THOMPSON, Ken. \fIUsers' Reference to B.\fR Bell Laboratories, 1972, MM-72-1271-1.
 .IP 3
 RICHARDS, Martin. \fIThe BCPL Reference Manual.\fR Multics Repository, 1967, Memorandum M-352.
+.IP 4
+PAPENHOFF, Angelo. \fIThe B Programming Language.\fR http://squoze.net/B, 2018.
