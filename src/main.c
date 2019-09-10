@@ -13,6 +13,16 @@
 #include "name.h"
 #include "parser.h"
 
+/* copyright information -- do not remove */
+const char ident[] =
+	"8bc version "
+#ifdef VERSION
+	VERSION
+#else
+	"???"
+#endif
+	"\n(c) 2019 Robert Clausecker\n";
+
 /*
  * Standard library symbol names.  Each name must occur in the
  * B runtime code and is mapped to a L#### label in main.  Names

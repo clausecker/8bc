@@ -9,6 +9,7 @@ bc1loc=`dirname $$0`/8bc1
 palloc=pal
 brtloc=`dirname $$0`/brt.pal
 
+version=???
 CC=c99 -D_POSIX_C_SOURCE=200809L
 CFLAGS=-O2
 
@@ -23,10 +24,14 @@ $(bc1): $(OBJ)
 
 $(bc): 8bc.sh
 	sed -e 's,%bc1loc%,$(bc1loc),' -e 's,%palloc%,$(palloc),' \
-	    -e 's,%brtloc%,$(brtloc),' <8bc.sh >"$(bc)"
+	    -e 's,%brtloc%,$(brtloc),' -e 's,%version%,$(version),' \
+	    <8bc.sh >"$(bc)"
 	chmod a+x "$(bc)"
 
 lexer.c: lexer.l parser.c
+
+main.o: main.c
+	$(CC) $(CFLAGS) -c -DVERSION=\"$(version)\" main.c
 
 clean:
 	rm -f $(bc) $(bc1) parser.c lexer.c y.tab.h $(OBJ)

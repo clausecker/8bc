@@ -5,9 +5,11 @@
 # name of this package
 package=8bc
 #package=pdp8bc
+version=0
 
 # adjust these according to your systems demands
 CC=c99 -D_POSIX_C_SOURCE=200809L
+#CC=cc
 #CC=gcc -std=c99
 CFLAGS=-O2
 #CFLAGS=-Os -g -Wall -Wno-parentheses -Wno-missing-braces
@@ -63,8 +65,8 @@ brtloc=$(DATADIR)/$(package)/brt.pal
 # what we pass down to other make processes
 makeopt="CC=$(CC)" "CFLAGS=$(CFLAGS)" "LDFLAGS=$(LDFLAGS)" \
     "YACC=$(YACC)" "LEX=$(LEX)" "GROFF=$(GROFF)" "NROFF=$(NROFF)" \
-	bc=$(bc) bc1=$(bc1) "bc1loc=$(bc1loc)" "palloc=$(palloc)" \
-	"brtloc=$(brtloc)"
+    bc=$(bc) bc1=$(bc1) "bc1loc=$(bc1loc)" "palloc=$(palloc)" \
+    "brtloc=$(brtloc)" version="$(version)"
 
 all: $(pal) $(bc).1 $(pal).1
 	cd doc && $(MAKE) $(makeopt) all
