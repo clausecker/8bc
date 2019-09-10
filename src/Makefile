@@ -10,6 +10,7 @@ palloc=pal
 brtloc=`dirname $$0`/brt.pal
 
 version=???
+SHEBANG=$(SHELL)
 CC=c99 -D_POSIX_C_SOURCE=200809L
 CFLAGS=-O2
 
@@ -25,7 +26,7 @@ $(bc1): $(OBJ)
 $(bc): 8bc.sh
 	sed -e 's,%bc1loc%,$(bc1loc),' -e 's,%palloc%,$(palloc),' \
 	    -e 's,%brtloc%,$(brtloc),' -e 's,%version%,$(version),' \
-	    <8bc.sh >"$(bc)"
+	    -e 's,%shell%,$(SHEBANG),' <8bc.sh >"$(bc)"
 	chmod a+x "$(bc)"
 
 lexer.c: lexer.l parser.c

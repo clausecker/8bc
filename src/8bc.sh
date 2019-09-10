@@ -1,4 +1,4 @@
-#!/bin/sh
+#!%shell%
 
 # (c) 2019 Robert Clausecker <fuz@fuz.su>
 # B compiler driver
@@ -22,6 +22,15 @@ version() {
 	exit 0
 }
 
+# move $1 to the location specified in $ofile
+mvout() {
+	case "$ofile" in
+	-) cat "$1"; rm "$1";;
+	"") ;;
+	*) mv "$1" "$ofile";;
+	esac
+}
+
 kflag=
 ofile=
 Sflag=
@@ -37,8 +46,21 @@ do
 done
 
 shift $((OPTIND-1))
-[ $# -eq 1 ] || usage
+if [ $# -eq 1 ]
+then
+	usage
+fi
 
+# if -k is provided, don't delete anything
+if [ -z "$kflag" ]
+then
+	rmtmp="rm -f"
+else
+	rmtmp=true
+fi
+
+# use expr instead of ${1%.b} to work on old shells
+#stem="`expr "$1" : "\(.*\).b"`"
 stem="${1%.b}"
 if [ "$stem.b" != "$1" ]
 then
@@ -46,34 +68,34 @@ then
 	usage
 fi
 
-exec >"$stem.pal"
-cat "%brtloc%"
-echo
-"%bc1loc%" <"$1"
+(
+	cat "%brtloc%"
+	echo
+	"%bc1loc%" <"$1"
+) >"$stem.pal"
 status=$?
-exec >/dev/null
 
 if [ $status -ne 0 ]
 then
-	rm -f "$stem.pal"
+	$rmtmp "$stem.pal"
 	exit $status
 fi
 
 if [ ! -z "$Sflag" ]
 then
-	[ ! -z "$ofile" ] && mv "$stem.pal" "$ofile"
+	mvout "$stem.pal"
 	exit 0
 fi
 
 "%palloc%" "$stem.pal"
 status=$?
-[ -z "$kflag" ] && rm -f "$stem.pal" "$stem.lst"
+$rmtmp "$stem.pal" "$stem.lst"
 
 if [ $status -ne 0 ]
 then
-	rm -f "$stem.pal" "$stem.lst" "$stem.bin"
+	$rmtmp "$stem.bin"
 else
-	[ ! -z "$ofile" ] && mv "$stem.bin" "$ofile"
+	mvout "$stem.bin"
 fi
 
 exit $status

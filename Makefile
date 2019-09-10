@@ -20,6 +20,9 @@ LEX=lex
 #LEX=flex -X
 GROFF=groff
 NROFF=nroff
+SHEBANG=$(SHELL)
+#SHELL=/bin/sh
+#SHELL=/usr/bin/bash
 
 # installation directories
 # usually, only PREFIX needs adjustment
@@ -66,7 +69,7 @@ brtloc=$(DATADIR)/$(package)/brt.pal
 makeopt="CC=$(CC)" "CFLAGS=$(CFLAGS)" "LDFLAGS=$(LDFLAGS)" \
     "YACC=$(YACC)" "LEX=$(LEX)" "GROFF=$(GROFF)" "NROFF=$(NROFF)" \
     bc=$(bc) bc1=$(bc1) "bc1loc=$(bc1loc)" "palloc=$(palloc)" \
-    "brtloc=$(brtloc)" version="$(version)"
+    "brtloc=$(brtloc)" version="$(version)" "SHEBANG=$(SHEBANG)"
 
 all: $(pal) $(bc).1 $(pal).1
 	cd doc && $(MAKE) $(makeopt) all
