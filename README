@@ -1,0 +1,27 @@
+8bc -- B compiler for the PDP-8
+
+8bc is a B compiler for the PDP-8.  It compiles standard B for the
+PDP-8/E or later computers with or without an EAE.  Programs are
+compiled to BIN formatted tapes with an entry point at 0200.
+
+To build 8bc, first edit Makefile according to your system's needs.
+Typically, nothing needs to be adjusted.  You need the following
+prerequisites:
+
+ * lex (e.g. flex) with libl.a
+ * yacc (e.g. bison) with liby.a
+ * groff
+
+Then type
+
+    make all
+
+to compile 8bc and
+
+    make install
+
+to install the distribution.  You may need to manually update the manual
+database afterwards.  If you are a maintainer, read Makefile carefully
+for instructions.
+
+Author: Robert Clausecker <fuz@fuz.su>
