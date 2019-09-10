@@ -547,11 +547,7 @@ normalsel(int op, const struct expr *e)
 		want = will;
 
 		break;
-	}
-
-	default:
-		fatal(NULL, "invalid arg to %s: %06o", __func__, op);
-	}
+	}}
 
 	if (must_emit & 1) {
 		undefer();
@@ -663,9 +659,6 @@ skipsel(int op, const struct expr *e)
 		}
 
 	peeled:	break;
-
-	default:
-		fatal(NULL, "invalid arg to %s: %06o", __func__, op);
 	}
 
 	if (affects_lac) {

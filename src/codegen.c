@@ -152,7 +152,7 @@ lstr(const struct expr *e)
 		break;
 
 	default:
-		fatal(e->name, "invalid arg to %s: %06o", __func__, v);
+		fatal(e->name, "cannot determine lstr: %06o", v);
 	}
 
 	return (buf);
@@ -199,7 +199,7 @@ emitr(const struct expr *e)
 		break;
 
 	default:
-		fatal(e->name, "invalid arg to %s: %06o", __func__, e->value);
+		fatal(e->name, "not an emittable rvalue: %06o", e->value);
 	}
 }
 

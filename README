@@ -8,6 +8,7 @@ To build 8bc, first edit Makefile according to your system's needs.
 Typically, nothing needs to be adjusted.  You need the following
 prerequisites:
 
+ * an ANSI C compiler
  * lex (e.g. flex) with libl.a
  * yacc (e.g. bison) with liby.a
  * groff
