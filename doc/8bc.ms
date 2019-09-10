@@ -3,7 +3,7 @@
 .\" generate a PDF: groff -Tpdf -t -ms 8bc.ms >8bc.pdf
 .RP
 .TL
-8bc \- a B Compiler for the PDP-8
+8bc \(en a B Compiler for the PDP-8
 .AU
 Robert Clausecker \(la\,fuz@fuz.su\/\(ra
 .AI
@@ -29,13 +29,11 @@ languages.
 .NH 1
 Introduction
 .LP
-The B programming language was designed in 1969 by Ken Thompson and
-Dennis Ritchie as a simplified version of BCPL for use with the PDP-7
-minicomputer [?].  Being the predecessor of C, the B programming
-.\" Ritchie, D., "The Development of the C Language", ACM SIGPLAN Notices vol 28 no 3, pp 201--208.
+The B programming language\~[2] was designed in 1969 by Ken Thompson and
+Dennis Ritchie as a simplified version of BCPL\~[3] for use with the PDP-7
+minicomputer\~[1].  Being the predecessor of C, the B programming
 language remains an important milestone in the continued evolution of
-procedural languages from first works by Rutishauser [?] over ALGOL 60
-.\" something about superplan
+procedural languages from first works by Rutishauser over ALGOL 60
 and BCPL to B and C and finally to modern incarnations like Limbo, Go,
 and Rust.
 .PP
@@ -329,10 +327,10 @@ Zero page usage
 The zero page is special because it is the only page that can be
 addressed directly.  B programs use the zero page as follows:
 .DS I
-0000\-0007	interrupt handler
-0010\-0017	indexed registers
-0020\-0027	runtime registers
-0030\-0177	scratch registers
+0000\(en0007	interrupt handler
+0010\(en0017	indexed registers
+0020\(en0027	runtime registers
+0030\(en0177	scratch registers
 .DE
 As interrupts are unsupported by B, the interrupt handler is a single
 .CW HLT
@@ -452,8 +450,8 @@ Character set
 .I 8bc
 compiles B source files written in ASCII.  To allow for source files to
 be composed on a real PDP-8 using an ASR 33 teletype, a 6 bit ASCII
-representation is used internally, mapping ASCII codes 0140\-0176 to
-0100\-0140, yielding the character set:
+representation is used internally, mapping ASCII codes 0140\(en0176 to
+0100\(en0140, yielding the character set:
 .DS I
 .TS
 cw20 cw20 .
@@ -795,3 +793,11 @@ and
 No further library functions are provided.  It is not possible to link
 two or more B source files into a single binary and there is no way to
 write parts of the program in another language.
+.NH 1
+Literature
+.IP 1
+RITCHIE, Dennis M. \fIThe development of the C language.\fR ACM SIGPLAN Notices, 1993, vol\~28, no\~3, p\~201\(en208.
+.IP 2
+THOMPSON, Ken. \fIUsers' Reference to B.\fR Bell Laboratories, 1972, MM-72-1271-1.
+.IP 3
+RICHARDS, Martin. \fIThe BCPL Reference Manual.\fR Multics Repository, 1967, Memorandum M-352.
