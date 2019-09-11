@@ -31,7 +31,7 @@ BINDIR=$(PREFIX)/bin
 LIBEXECDIR=$(PREFIX)/libexec
 DATADIR=$(PREFIX)/share
 DOCDIR=$(DATADIR)/doc
-EXAMPLEDIR=$(DATADIR)/example
+EXAMPLEDIR=$(DATADIR)/examples
 MANDIR=$(DATADIR)/man
 MAN1DIR=$(MANDIR)/man1
 
@@ -66,10 +66,10 @@ palloc=$(BINDIR)/$(pal)
 brtloc=$(DATADIR)/$(package)/brt.pal
 
 # what we pass down to other make processes
-makeopt="CC=$(CC)" "CFLAGS=$(CFLAGS)" "LDFLAGS=$(LDFLAGS)" \
-    "YACC=$(YACC)" "LEX=$(LEX)" "GROFF=$(GROFF)" "NROFF=$(NROFF)" \
-    bc=$(bc) bc1=$(bc1) "bc1loc=$(bc1loc)" "palloc=$(palloc)" \
-    "brtloc=$(brtloc)" version="$(version)" "SHEBANG=$(SHEBANG)"
+makeopt='CC=$(CC)' 'CFLAGS=$(CFLAGS)' 'LDFLAGS=$(LDFLAGS)' \
+    'YACC=$(YACC)' 'LEX=$(LEX)' 'GROFF=$(GROFF)' 'NROFF=$(NROFF)' \
+    bc=$(bc) bc1=$(bc1) 'bc1loc=$(bc1loc)' 'palloc=$(palloc)' \
+    'brtloc=$(brtloc)' version='$(version)' 'SHEBANG=$(SHEBANG)'
 
 all: $(pal) $(bc).1 $(pal).1
 	cd doc && $(MAKE) $(makeopt) all
@@ -77,9 +77,9 @@ all: $(pal) $(bc).1 $(pal).1
 
 # patch the pal assembler
 $(pal).c: contrib/pal.c contrib/pal.diff
-	cp contrib/pal.c "$(pal).c"
-	patch "$(pal).c" <contrib/pal.diff
-	rm -f "$(pal).c.orig"
+	cp contrib/pal.c '$(pal).c'
+	patch '$(pal).c' <contrib/pal.diff
+	rm -f '$(pal).c.orig'
 
 # patch the documentation
 $(bc).1: doc/8bc.1
@@ -93,22 +93,22 @@ $(pal).1: doc/pal.1
 
 # copy files to prototype directory
 install: all
-	mkdir -p "$P$(BINDIR)"
-	cp "src/$(bc)" "$(pal)" "$P$(BINDIR)/"
-	mkdir -p "$P$(LIBEXECDIR)"
-	cp "src/$(bc1)" "$P$(bc1loc)"
-	mkdir -p "$P$(DATADIR)/$(package)"
-	cp "src/brt.pal" "$P$(brtloc)"
-	mkdir -p "$P$(DOCDIR)/$(package)"
-	for doc in $(doc) ; do cp doc/$$doc "$P$(DOCDIR)/$(package)/" ; done
-	mkdir -p "$P$(EXAMPLEDIR)/$(package)"
-	for example in $(example) ; do cp example/$$example "$P$(EXAMPLEDIR)/$(package)/" ; done
-	mkdir -p "$P$(MAN1DIR)"
-	cp "$(bc).1" "$(pal).1" "$P$(MAN1DIR)/"
+	mkdir -p '$P$(BINDIR)'
+	cp 'src/$(bc)' '$(pal)' '$P$(BINDIR)/'
+	mkdir -p '$P$(LIBEXECDIR)'
+	cp 'src/$(bc1)' '$P$(bc1loc)'
+	mkdir -p '$P$(DATADIR)/$(package)'
+	cp 'src/brt.pal' '$P$(brtloc)'
+	mkdir -p '$P$(DOCDIR)/$(package)/'
+	for doc in $(doc); do cp doc/$$doc '$P$(DOCDIR)/$(package)/'; done
+	mkdir -p '$P$(EXAMPLEDIR)/$(package)/'
+	for example in $(example); do cp example/$$example '$P$(EXAMPLEDIR)/$(package)/'; done
+	mkdir -p '$P$(MAN1DIR)'
+	cp '$(bc).1' '$(pal).1' '$P$(MAN1DIR)/'
 
 clean:
 	cd doc && $(MAKE) $(makeopt) clean
 	cd src && $(MAKE) $(makeopt) clean
-	rm -f $(pal) $(pal).c $(pal).1 $(bc).1
+	rm -f '$(pal)' '$(pal).c' '$(pal).1' '$(bc).1'
 
 .PHONY: all install clean
