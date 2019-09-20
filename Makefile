@@ -5,7 +5,7 @@
 # name of this package
 package=8bc
 #package=pdp8bc
-version=1
+version=2
 
 # adjust these according to your systems demands
 CC=c99 -D_POSIX_C_SOURCE=200809L
