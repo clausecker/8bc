@@ -592,7 +592,7 @@ skipsel(int op, const struct expr *e)
 
 	skipstate = NORMAL;
 
-	switch(op & 07000) {
+	switch (op & 07000) {
 	case TAD:
 	case AND:
 		affects_lac = 1;
@@ -709,8 +709,10 @@ isel(int op, const struct expr *e)
 			break;
 		}
 
-		/* if the skip instruction has already been emitted,
-		 * treat op like a skipable instruction. */
+		/*
+		 * if the skip instruction has already been emitted,
+		 * treat op like a skipable instruction.
+		 */
 
 		/* FALLTHROUGH */
 
