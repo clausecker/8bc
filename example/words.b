@@ -1,8 +1,11 @@
 /* count words in the input and print statistics */
 main()
 {
-	extrn getword, findword, nwords, words, freqs, endbuf, putstats;
+	extrn getword, findword, nwords, words, freqs, endbuf, end, putstats;
 	auto word, i;
+
+	nwords = 0;
+	endbuf = &end;
 
 	while (word = getword()) {
 		i = findword(word);
@@ -112,7 +115,7 @@ putstats()
 }
 
 nwords 0;	/* the number of words found so far */
-words[64];	/* words found */
-freqs[64];	/* word frequencies */
+words[128];	/* words found */
+freqs[128];	/* word frequencies */
 endbuf end;	/* first free character in wordbuf */
 
