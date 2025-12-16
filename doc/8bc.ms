@@ -111,7 +111,8 @@ all local variables are automatic; the
 keyword does not exist
 .IP \(bu 2
 B does not have scopes
-.IP \(bu 2 all names external to a function must be
+.IP \(bu 2
+all names external to a function must be
 explicitly declared as
 .B extrn
 (sic!) before use; as a popular extension, some compilers did so
